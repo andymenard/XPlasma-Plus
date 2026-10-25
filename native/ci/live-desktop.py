@@ -117,6 +117,24 @@ def changed(output,before,after,box):
  if not ImageChops.difference(a,b).getbbox():raise RuntimeError(after+' did not change the expected desktop region')
 
 
+def runtime_backtrace(real,home,output):
+ env=dict(os.environ);env['QT_PLUGIN_PATH']=str(home/'.local/lib/qt6/plugins')
+ env['DEBUGINFOD_URLS']='https://debuginfod.archlinux.org'
+ with (output/'runtime-backtrace.log').open('w') as trace:
+  process=subprocess.Popen(['gdb','--batch','-ex','set debuginfod enabled on','-ex','run','-ex','thread apply all bt','--args',real,'--replace','--no-respawn'],env=env,stdout=trace,stderr=subprocess.STDOUT)
+  try:
+   deadline=time.monotonic()+45
+   while process.poll() is None and time.monotonic()<deadline:
+    try:
+     script('print(JSON.stringify(panels().map(function(p){return {id:p.id,height:p.height,widgets:p.widgets().map(function(w){return {id:w.id,type:w.type}})}})))')
+     break
+    except subprocess.SubprocessError:time.sleep(1)
+   try:process.wait(timeout=45)
+   except subprocess.TimeoutExpired:process.terminate();process.wait(timeout=10)
+  finally:
+   if process.poll() is None:process.kill()
+
+
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--public-release-assets',action='store_true');a=p.parse_args()
  home=Path.home();output=a.output.resolve();output.mkdir(parents=True,exist_ok=True)
@@ -164,7 +182,10 @@ def main():
    changed(output,'applied','start-menu',(0,200,500,760))
    screenshot=(output/'start-menu.png').read_bytes()
    if len(screenshot)<500000:print('XPLASMA_SCREENSHOT_BASE64 '+base64.b64encode(screenshot).decode(),flush=True)
-   run(['xdotool','key','Escape']);time.sleep(1)
+   # Exercise the application model and flyout, not just the menu frame.
+   run(['xdotool','mousemove','80','708','click','1']);time.sleep(3);snapshot(output,'all-programs')
+   changed(output,'start-menu','all-programs',(180,100,850,760))
+   run(['xdotool','key','Escape','Escape']);time.sleep(1)
    snapshot(output,'clock-before')
    click_widget('fyi.hotsocket.xplasma.clock');time.sleep(2);snapshot(output,'clock-calendar')
    changed(output,'clock-before','clock-calendar',(780,100,1280,760))
@@ -194,8 +215,12 @@ def main():
   logs=(output/'plasmashell.log').read_text()
   bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and not line.startswith('file:///usr/share/plasma/') and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
-  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':['Xvfb and Openbox; not a complete KWin/login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
- except Exception:
+  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':['Xvfb and Openbox; not a complete KWin/login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
+ except Exception as failure:
+  for source in [home/'.config/plasma-org.kde.plasma.desktop-appletsrc',home/'.local/share/xplasma/state.json']:
+   if source.is_file():shutil.copy2(source,output/('failed-'+source.name))
+  if isinstance(failure,subprocess.CalledProcessError) and failure.cmd[0]=='gdbus' and shutil.which('gdb'):
+   runtime_backtrace(real,home,output)
   for logfile in sorted(output.glob('*.log')):
    print('--- '+logfile.name+' ---',flush=True)
    print('\n'.join(logfile.read_text(errors='replace').splitlines()[-100:]),flush=True)

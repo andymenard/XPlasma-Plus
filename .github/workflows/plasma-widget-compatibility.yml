@@ -138,6 +138,7 @@ jobs:
       XP_EXPECTED_PLASMA: ${{ matrix.plasma }}
       XP_FAMILY: ${{ matrix.family }}
       XP_ARCHIVE_DATE: ${{ matrix.archive_date }}
+      XP_BUILD_CACHE: /tmp/xp-component-cache
     steps:
       - name: Bootstrap container
         run: |
@@ -152,6 +153,11 @@ jobs:
             fi
           fi
       - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        id: widget-cache
+        with:
+          path: /tmp/xp-component-cache
+          key: xp-widget-components-${{ matrix.plasma }}-${{ hashFiles('native/src/app/overrides/**', 'installer/build-widgets.py', 'installer/build_cache.py') }}
       - name: Install this distribution's complete widget SDK
         run: |
           python3 - <<'PY'
@@ -179,6 +185,11 @@ jobs:
           mkdir -p /tmp/xp/source
           ln -s "$GITHUB_WORKSPACE/native" /tmp/xp/source/xplasma
           python3 installer/build-widgets.py /tmp/xp 3
+      - uses: actions/cache/save@v4
+        if: always() && steps.widget-cache.outputs.cache-hit != 'true'
+        with:
+          path: /tmp/xp-component-cache
+          key: ${{ steps.widget-cache.outputs.cache-primary-key }}
       - name: Install virtual desktop test tools
         run: |
           if [ "$XP_FAMILY" = dnf ]; then
