@@ -5,13 +5,51 @@
 Uses original geometric bitmap fixtures, not Windows artwork. This checks runtime
 integration and interactions, not pixel fidelity or a full distribution login.
 """
-import argparse,ast,json,os,re,shutil,struct,subprocess,time
+import argparse,ast,base64,hashlib,json,os,re,shutil,struct,subprocess,tarfile,time,urllib.request
 from pathlib import Path
 
 
 def run(args,**kwargs):
  print('+',*map(str,args),flush=True)
  return subprocess.run(list(map(str,args)),check=True,text=True,**kwargs)
+
+
+def public_assets(home):
+ # Reuse immutable data already distributed in the project's public release;
+ # never include extracted Windows resources in source or test artifacts.
+ url='https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.1/xplasma-plus-1.0.1-installer-generic.tar.gz'
+ expected='d7409746b2f95dcd5cb105b3bba47b062def3b70e9a79172b0ba2b153b2738f8'
+ archive=home/'public-release.tar.gz';digest=hashlib.sha256()
+ with urllib.request.urlopen(url,timeout=120) as response,archive.open('wb') as target:
+  while chunk:=response.read(1024*1024):digest.update(chunk);target.write(chunk)
+ if digest.hexdigest()!=expected:raise RuntimeError('Public test-data archive hash mismatch')
+ with tarfile.open(archive,'r|gz') as source:
+  for member in source:
+   parts=Path(member.name).parts
+   if not member.isfile() or 'payload' not in parts:continue
+   relative=parts[parts.index('payload')+1:]
+   if relative[:2]!=('assets','xplasma') and relative[:2]!=('assets','fonts'):continue
+   tail=relative[2:]
+   if not tail or any(p in {'.','..'} for p in tail):raise RuntimeError('Unsafe release test-data path')
+   root=home/('.local/share/xplasma' if relative[1]=='xplasma' else '.local/share/fonts/xp')
+   destination=root.joinpath(*tail);destination.parent.mkdir(parents=True,exist_ok=True)
+   with source.extractfile(member) as content,destination.open('wb') as target:shutil.copyfileobj(content,target)
+ archive.unlink();run(['fc-cache','-f'])
+
+
+def stock_layout(home):
+ # Exercise transformation of an existing stock desktop. Arch 6.8's first-login
+ # layout script crashes in KConfigGroup before any XP code is applied; seed
+ # equivalent ordinary stock applets instead of invoking that unrelated script.
+ reply=subprocess.check_output(['gdbus','call','--session','--dest','org.kde.ActivityManager','--object-path','/ActivityManager/Activities','--method','org.kde.ActivityManager.Activities.CurrentActivity'],text=True,timeout=30)
+ activity=ast.literal_eval(reply)[0]
+ if not activity:raise RuntimeError('Activity manager did not supply a current activity')
+ config=home/'.config/plasma-org.kde.plasma.desktop-appletsrc';config.parent.mkdir(parents=True,exist_ok=True)
+ text='[Containments][1]\nactivityId='+activity+'\nformfactor=0\nlastScreen=0\nlocation=0\nplugin=org.kde.plasma.folder\nwallpaperplugin=org.kde.image\n\n'
+ text+='[Containments][2]\nformfactor=2\nlastScreen=0\nlocation=4\nplugin=org.kde.panel\n\n[Containments][2][General]\nAppletOrder=3;4;5;6\n\n'
+ for number,plugin in [(3,'org.kde.plasma.kickoff'),(4,'org.kde.plasma.icontasks'),(5,'org.kde.plasma.systemtray'),(6,'org.kde.plasma.digitalclock')]:
+  text+='[Containments][2][Applets]['+str(number)+']\nplugin='+plugin+'\n\n'
+ config.write_text(text)
 
 
 def fixture_explorer(path):
@@ -80,11 +118,13 @@ def changed(output,before,after,box):
 
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--public-release-assets',action='store_true');a=p.parse_args()
  home=Path.home();output=a.output.resolve();output.mkdir(parents=True,exist_ok=True)
  if not (home/'.xplasma-disposable-desktop').is_file():raise RuntimeError('Refusing a home not explicitly marked disposable')
  cli=a.runtime.resolve()/'bin/xplasma'
- fixture_explorer(home/'.local/share/xplasma/extracted/explorer.exe')
+ if a.public_release_assets:public_assets(home)
+ else:fixture_explorer(home/'.local/share/xplasma/extracted/explorer.exe')
+ look=str(home/'.local/share/xplasma/assets/themes/Luna/luna.msstyles') if a.public_release_assets else 'classic:Windows Standard'
  # Preserve restarted shells' logs: production intentionally detaches them.
  wrappers=home/'bin';wrappers.mkdir(exist_ok=True);real=shutil.which('plasmashell')
  import shlex
@@ -94,6 +134,7 @@ def main():
  try:
   with (output/'session.log').open('w') as log:
    processes.append(subprocess.Popen(['openbox'],stdout=log,stderr=log))
+   stock_layout(home)
    processes.append(subprocess.Popen(['plasmashell'],stdout=log,stderr=log))
    try:wait_shell()
    except RuntimeError:
@@ -104,7 +145,7 @@ def main():
    snapshot(output,'before')
    # Real desktop application path: this checks preflight, plugin selection,
    # patches, generated themes, layout changes and shell restarts together.
-   args=[cli,'apply','classic:Windows Standard','--no-decoration','--no-fonts','--no-widgets','--no-icons','--no-sounds','--no-wallpaper']
+   args=[cli,'apply',look,'--no-decoration','--no-fonts','--no-widgets','--no-icons','--no-sounds','--no-wallpaper']
    for attempt in (1,2):
     with (output/('apply-'+str(attempt)+'.log')).open('w') as apply_log:run(args,stdout=apply_log,stderr=subprocess.STDOUT,timeout=240)
     wait_shell();time.sleep(5)
@@ -121,6 +162,8 @@ def main():
    if active!=window:raise RuntimeError('XP task button did not activate the application window')
    click_widget('fyi.hotsocket.xplasma.start');time.sleep(3);snapshot(output,'start-menu')
    changed(output,'applied','start-menu',(0,200,500,760))
+   screenshot=(output/'start-menu.png').read_bytes()
+   if len(screenshot)<500000:print('XPLASMA_SCREENSHOT_BASE64 '+base64.b64encode(screenshot).decode(),flush=True)
    run(['xdotool','key','Escape']);time.sleep(1)
    snapshot(output,'clock-before')
    click_widget('fyi.hotsocket.xplasma.clock');time.sleep(2);snapshot(output,'clock-calendar')
@@ -140,6 +183,10 @@ def main():
    maps=(output/'plasmashell-maps.txt').read_text()
    for plugin in state.get('settings',{}).get('forkPlugins',[]):
     if plugin not in maps:raise RuntimeError('Required replacement plugin was not loaded: '+plugin)
+   if a.public_release_assets:
+    with (output/'switch-classic.log').open('w') as switch_log:
+     run([cli,'apply','classic:Windows Standard',*args[3:]],stdout=switch_log,stderr=subprocess.STDOUT,timeout=240)
+    wait_shell();time.sleep(3);snapshot(output,'switched-classic')
    with (output/'reset.log').open('w') as reset_log:run([cli,'reset'],stdout=reset_log,stderr=subprocess.STDOUT,timeout=240)
    wait_shell();time.sleep(5)
    if any(t.startswith('fyi.hotsocket.xplasma.') for t in layout(output,'reset')):raise RuntimeError('XP applets remained after reset')
@@ -147,7 +194,7 @@ def main():
   logs=(output/'plasmashell.log').read_text()
   bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and not line.startswith('file:///usr/share/plasma/') and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
-  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','clock calendar popup','notification popup','reset'],'limits':['original geometric fixtures replace Windows bitmap assets','Xvfb and Openbox; not a complete KWin/login/hardware certification']},indent=2)+'\n')
+  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':['Xvfb and Openbox; not a complete KWin/login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
  except Exception:
   for logfile in sorted(output.glob('*.log')):
    print('--- '+logfile.name+' ---',flush=True)

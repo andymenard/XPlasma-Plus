@@ -77,7 +77,7 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -204,7 +204,7 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets
       - uses: actions/upload-artifact@v4
         if: always()
         with:
