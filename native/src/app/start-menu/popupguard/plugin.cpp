@@ -5,9 +5,11 @@
 #include <QQuickItem>
 #include <QPointer>
 #include <QDebug>
+#include <QMetaProperty>
 class ResizeGuard : public QObject {
     Q_OBJECT
     Q_PROPERTY(QWindow* window READ window WRITE setWindow NOTIFY windowChanged)
+    Q_PROPERTY(bool bordersWritable READ bordersWritable NOTIFY windowChanged)
     QPointer<QWindow> m_window;
     QList<QPointer<QObject>> m_filters;
     QList<QPair<QPointer<QQuickItem>, qreal>> m_backgrounds;
@@ -15,6 +17,11 @@ public:
     using QObject::QObject;
     ~ResizeGuard() override {restore();}
     QWindow* window() const {return m_window;}
+    bool bordersWritable() const {
+        if (!m_window) return false;
+        const int index = m_window->metaObject()->indexOfProperty("borders");
+        return index >= 0 && m_window->metaObject()->property(index).isWritable();
+    }
     void restore(){
         if(m_window)for(auto filter:m_filters)if(filter)m_window->installEventFilter(filter);
         m_filters.clear();
@@ -49,3 +56,4 @@ public:
     void registerTypes(const char *uri) override {qmlRegisterType<ResizeGuard>(uri,1,0,"ResizeGuard");}
 };
 #include "plugin.moc"
+

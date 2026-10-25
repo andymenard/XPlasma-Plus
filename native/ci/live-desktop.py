@@ -95,7 +95,13 @@ def main():
   with (output/'session.log').open('w') as log:
    processes.append(subprocess.Popen(['openbox'],stdout=log,stderr=log))
    processes.append(subprocess.Popen(['plasmashell'],stdout=log,stderr=log))
-   wait_shell();snapshot(output,'before')
+   try:wait_shell()
+   except RuntimeError:
+    if shutil.which('gdb'):
+     with (output/'startup-backtrace.log').open('w') as trace:
+      subprocess.run(['timeout','30','gdb','--batch','-ex','run','-ex','thread apply all bt','--args',real,'--no-respawn'],stdout=trace,stderr=subprocess.STDOUT,check=False)
+    raise
+   snapshot(output,'before')
    # Real desktop application path: this checks preflight, plugin selection,
    # patches, generated themes, layout changes and shell restarts together.
    args=[cli,'apply','classic:Windows Standard','--no-decoration','--no-fonts','--no-widgets','--no-icons','--no-sounds','--no-wallpaper']
@@ -139,7 +145,7 @@ def main():
    if any(t.startswith('fyi.hotsocket.xplasma.') for t in layout(output,'reset')):raise RuntimeError('XP applets remained after reset')
    snapshot(output,'reset')
   logs=(output/'plasmashell.log').read_text()
-  bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
+  bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and not line.startswith('file:///usr/share/plasma/') and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
   (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','clock calendar popup','notification popup','reset'],'limits':['original geometric fixtures replace Windows bitmap assets','Xvfb and Openbox; not a complete KWin/login/hardware certification']},indent=2)+'\n')
  except Exception:

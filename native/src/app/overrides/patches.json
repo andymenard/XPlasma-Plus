@@ -235,13 +235,23 @@
   },
   {
    "find": "        }\n        onObjectAdded: (index, object) => {\n            positionPopups();\n",
-   "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            positionPopups();\n",
+   "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof popupNotificationsModel.playSoundHint === \"function\")\n                    popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            positionPopups();\n",
    "alternatives": [
     {
      "find": "        }\n        onObjectAdded: (index, object) => {\n            globals.positionPopups();\n",
-     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof popupNotificationsModel.playSoundHint === \"function\")\n                    popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
     }
    ]
+  },
+  {
+   "find": "        const containment = plasmoid.containment;\n",
+   "replace": "        const containment = plasmoid.containment;\n        if (!containment) return Qt.rect(0, 0, -1, -1);\n",
+   "optional": true
+  },
+  {
+   "find": "        globals.plasmoid = globals.plasmoidItem.plasmoid;",
+   "replace": "        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;",
+   "optional": true
   }
  ],
  "notifications/main.qml": [

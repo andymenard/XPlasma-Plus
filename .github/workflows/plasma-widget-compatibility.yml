@@ -65,6 +65,10 @@ jobs:
           QT_QUICK_BACKEND: software
           LIBGL_ALWAYS_SOFTWARE: '1'
           DISPLAY: ':99'
+          XDG_CURRENT_DESKTOP: KDE
+          XDG_SESSION_TYPE: x11
+          KDE_SESSION_VERSION: '6'
+          LC_ALL: C.UTF-8
         run: |
           mkdir -p /tmp/xp-live-home /tmp/xp-live-runtime
           chmod 700 /tmp/xp-live-runtime
@@ -178,9 +182,9 @@ jobs:
       - name: Install virtual desktop test tools
         run: |
           if [ "$XP_FAMILY" = dnf ]; then
-            dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng
+            dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng gdb
           else
-            pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus
+            pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus gdb
           fi
       - name: Exercise a real Plasma desktop in a disposable home
         env:
@@ -188,6 +192,10 @@ jobs:
           QT_QUICK_BACKEND: software
           LIBGL_ALWAYS_SOFTWARE: '1'
           DISPLAY: ':99'
+          XDG_CURRENT_DESKTOP: KDE
+          XDG_SESSION_TYPE: x11
+          KDE_SESSION_VERSION: '6'
+          LC_ALL: C.UTF-8
         run: |
           mkdir -p /tmp/xp-live-home /tmp/xp-live-runtime
           chmod 700 /tmp/xp-live-runtime
