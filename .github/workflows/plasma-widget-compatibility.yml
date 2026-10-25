@@ -5,7 +5,29 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
+  vm-graphics-probe:
+    runs-on: ubuntu-24.04
+    container: archlinux:latest
+    timeout-minutes: 15
+    steps:
+      - name: Check software-accelerated virtual-machine graphics
+        env:
+          DISPLAY: ':98'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          pacman -Syu --needed --noconfirm qemu-desktop xorg-server-xvfb mesa
+          Xvfb :98 -screen 0 1280x800x24 > /tmp/vm-xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          result=0
+          timeout 8 qemu-system-x86_64 -nodefaults -machine q35,accel=tcg -m 256 -device virtio-vga-gl -display gtk,gl=on -S > /tmp/vm-graphics.log 2>&1 || result=$?
+          cat /tmp/vm-graphics.log
+          test "$result" = 124
   source-matrix:
     runs-on: ubuntu-24.04
     container: fedora:44
@@ -66,6 +88,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           KWIN_COMPOSE: Q
           QT_FORCE_STDERR_LOGGING: '1'
+          QT_LOGGING_RULES: 'kwin_core.debug=true;KWIN_UTILS.debug=true;org.kde.plasma.libtaskmanager.debug=true'
           DISPLAY: ':99'
           XDG_CURRENT_DESKTOP: KDE
           XDG_SESSION_TYPE: x11
@@ -95,6 +118,7 @@ jobs:
           except OSError as error:
               if error.errno not in (errno.ENODATA,errno.ENOTSUP):raise
           PYCAP
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime kbuildsycoca6 --noincremental
           result=0
           HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
           mkdir -p /tmp/live-desktop-results
@@ -228,6 +252,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           KWIN_COMPOSE: Q
           QT_FORCE_STDERR_LOGGING: '1'
+          QT_LOGGING_RULES: 'kwin_core.debug=true;KWIN_UTILS.debug=true;org.kde.plasma.libtaskmanager.debug=true'
           DISPLAY: ':99'
           XDG_CURRENT_DESKTOP: KDE
           XDG_SESSION_TYPE: x11
@@ -257,6 +282,7 @@ jobs:
           except OSError as error:
               if error.errno not in (errno.ENODATA,errno.ENOTSUP):raise
           PYCAP
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime kbuildsycoca6 --noincremental
           result=0
           HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
           mkdir -p /tmp/live-desktop-results

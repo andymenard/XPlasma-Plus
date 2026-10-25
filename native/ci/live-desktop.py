@@ -11,7 +11,7 @@ from pathlib import Path
 
 def run(args,**kwargs):
  if os.environ.get('XP_NESTED_KWIN')=='1' and str(args[0])=='xdotool' and str(args[1]) in {'mousemove','key'}:
-  args=[args[0],'--display',':99',*args[1:]]
+  kwargs['env']={**os.environ,**kwargs.get('env',{}),'DISPLAY':':99'}
  print('+',*map(str,args),flush=True)
  return subprocess.run(list(map(str,args)),check=True,text=True,**kwargs)
 
@@ -123,9 +123,9 @@ def changed(output,before,after,box):
 
 def runtime_backtrace(real,home,output):
  env=dict(os.environ);env['QT_PLUGIN_PATH']=str(home/'.local/lib/qt6/plugins')
- env['DEBUGINFOD_URLS']='https://debuginfod.archlinux.org'
+ env['DEBUGINFOD_URLS']=''
  with (output/'runtime-backtrace.log').open('w') as trace:
-  process=subprocess.Popen(['gdb','--batch','-ex','set debuginfod enabled on','-ex','run','-ex','thread apply all bt','--args',real,'--replace','--no-respawn'],env=env,stdout=trace,stderr=subprocess.STDOUT)
+  process=subprocess.Popen(['gdb','--batch','-ex','set debuginfod enabled off','-ex','run','-ex','thread apply all bt','--args',real,'--replace','--no-respawn'],env=env,stdout=trace,stderr=subprocess.STDOUT)
   try:
    deadline=time.monotonic()+45
    while process.poll() is None and time.monotonic()<deadline:
@@ -134,7 +134,10 @@ def runtime_backtrace(real,home,output):
      break
     except subprocess.SubprocessError:time.sleep(1)
    try:process.wait(timeout=45)
-   except subprocess.TimeoutExpired:process.terminate();process.wait(timeout=10)
+   except subprocess.TimeoutExpired:
+    process.terminate()
+    try:process.wait(timeout=5)
+    except subprocess.TimeoutExpired:process.kill();process.wait(timeout=5)
   finally:
    if process.poll() is None:process.kill()
 
