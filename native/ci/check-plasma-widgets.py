@@ -45,7 +45,9 @@ def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--checker',type=Path,required=True)
  p.add_argument('--cache',type=Path,default=Path.home()/'.cache/xplasma-plus/widget-sources')
- p.add_argument('--qmlformat',type=Path,required=True)
+ parser=p.add_mutually_exclusive_group(required=True)
+ parser.add_argument('--qmlformat',type=Path)
+ parser.add_argument('--qmllint',type=Path)
  p.add_argument('--output',type=Path)
  p.add_argument('--installed-series',choices=['6.0','6.1','6.2','6.3','6.4'])
  p.add_argument('--system-data',type=Path,default=Path('/usr/share'))
@@ -61,7 +63,11 @@ def main():
   subprocess.run([str(a.checker),str(manifest),str(cache),str(output)],check=True)
   count=0
   for file in sorted(output.rglob('*.qml')):
-   subprocess.run([str(a.qmlformat),'--ignore-settings',str(file)],check=True,stdout=subprocess.DEVNULL)
+   # qmllint verifies the input without rewriting it. Older qmlformat
+   # versions corrupt comma declarations in for loops during write-out.
+   command=([str(a.qmllint),'--ignore-settings','--max-warnings','-1',str(file)] if a.qmllint
+            else [str(a.qmlformat),'--ignore-settings',str(file)])
+   subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
    count+=1
   print('Parsed',count,'patched QML files without syntax errors.',flush=True)
 

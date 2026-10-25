@@ -54,7 +54,7 @@ jobs:
         run: |
           cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/build --parallel 3 --target xplasma-runtime check-widget-patches
-          python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmlformat /usr/lib/qt6/bin/qmlformat --installed-series 6.3
+          python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmllint /usr/lib/qt6/bin/qmllint --installed-series 6.3
   oldest-qt:
     runs-on: ubuntu-24.04
     timeout-minutes: 30

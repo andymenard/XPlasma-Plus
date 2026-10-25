@@ -42,7 +42,11 @@ def main():
    else:pending.append(name)
   if not pending:continue
   native=root/'build'/project
-  run(['cmake','-S',patched/(project+'-'+sources[project]),'-B',native,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTING=OFF'])
+  configure=['cmake','-S',patched/(project+'-'+sources[project]),'-B',native,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTING=OFF']
+  # Only the panel applet is built from plasma-desktop. Its unrelated X11
+  # mouse KCM requires an SDK that older distribution packages don't ship.
+  if project=='plasma-desktop':configure+=['-DBUILD_KCM_MOUSE_X11=OFF']
+  run(configure)
   run(['cmake','--build',native,'--parallel',jobs,'--target',*pending])
   for name in pending:
    plugin=native/'bin/plasma/applets'/(name+'.so')
