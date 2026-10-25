@@ -175,14 +175,24 @@ def main():
     found=layout(output,'applied-'+str(attempt))
     required={'fyi.hotsocket.xplasma.start','fyi.hotsocket.xplasma.clock','org.kde.plasma.taskmanager','org.kde.plasma.systemtray'}
     if not required<=found:raise RuntimeError('Required XP widgets missing: '+str(required-found))
+   snapshot(output,'no-tasks')
    # Make the task manager render a real managed application window.
    processes.append(subprocess.Popen(['xterm','-title','XPlasmaLiveTest','-e','sleep','240'],stdout=log,stderr=log))
    time.sleep(3);snapshot(output,'applied')
    window=subprocess.check_output(['xdotool','search','--onlyvisible','--name','^XPlasmaLiveTest$'],text=True).splitlines()[-1]
+   geometry=json.loads(script('print(JSON.stringify((function(){for(const p of panels())for(const w of p.widgets())if(w.type==="org.kde.plasma.taskmanager"){const g=w.geometry;return {x:g.x,y:800-p.height+g.y,width:g.width,height:g.height};}return null;})()))'))
+   if not geometry:raise RuntimeError('Task manager has no geometry')
+   from PIL import Image,ImageChops
+   box=(round(geometry['x']),round(geometry['y']),round(geometry['x']+min(200,geometry['width'])),round(geometry['y']+geometry['height']))
+   before=Image.open(output/'no-tasks.png').convert('RGB').crop(box)
+   after=Image.open(output/'applied.png').convert('RGB').crop(box)
+   pixels=sum(max(pixel)>32 for pixel in ImageChops.difference(before,after).getdata())
+   if pixels<50:raise RuntimeError('Application has no visibly rendered XP task button')
    run(['xdotool','windowminimize',window]);time.sleep(1)
    click_widget('org.kde.plasma.taskmanager');time.sleep(2)
    active=subprocess.check_output(['xdotool','getactivewindow'],text=True).strip()
-   if active!=window:raise RuntimeError('XP task button did not activate the application window')
+   visible=subprocess.check_output(['xdotool','search','--onlyvisible','--name','^XPlasmaLiveTest$'],text=True).splitlines()
+   if active!=window or window not in visible:raise RuntimeError('XP task button did not restore and activate the application window')
    click_widget('fyi.hotsocket.xplasma.start');time.sleep(3);snapshot(output,'start-menu')
    changed(output,'applied','start-menu',(0,200,500,760))
    screenshot=(output/'start-menu.png').read_bytes()
@@ -220,7 +230,7 @@ def main():
   logs=(output/'plasmashell.log').read_text()
   bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and not line.startswith('file:///usr/share/plasma/') and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
-  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
+  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','visible task button and window restoration','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
  except Exception as failure:
   for picture in ['applied.png','before.png']:
    file=output/picture
