@@ -10,6 +10,8 @@ from pathlib import Path
 
 
 def run(args,**kwargs):
+ if os.environ.get('XP_NESTED_KWIN')=='1' and str(args[0])=='xdotool' and str(args[1]) in {'mousemove','key'}:
+  args=[args[0],'--display',':99',*args[1:]]
  print('+',*map(str,args),flush=True)
  return subprocess.run(list(map(str,args)),check=True,text=True,**kwargs)
 
@@ -94,7 +96,9 @@ def wait_shell():
 
 
 def snapshot(output,name):
- run(['import','-window','root',output/(name+'.png')])
+ command=['import']
+ if os.environ.get('XP_NESTED_KWIN')=='1':command+=['-display',':99']
+ run([*command,'-window','root',output/(name+'.png')])
 
 
 def layout(output,name):
@@ -136,7 +140,8 @@ def runtime_backtrace(real,home,output):
 
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--public-release-assets',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--public-release-assets',action='store_true');p.add_argument('--nested-kwin',action='store_true');a=p.parse_args()
+ if a.nested_kwin:os.environ['XP_NESTED_KWIN']='1'
  home=Path.home();output=a.output.resolve();output.mkdir(parents=True,exist_ok=True)
  if not (home/'.xplasma-disposable-desktop').is_file():raise RuntimeError('Refusing a home not explicitly marked disposable')
  cli=a.runtime.resolve()/'bin/xplasma'
@@ -151,7 +156,7 @@ def main():
  processes=[]
  try:
   with (output/'session.log').open('w') as log:
-   processes.append(subprocess.Popen(['openbox'],stdout=log,stderr=log))
+   if not a.nested_kwin:processes.append(subprocess.Popen(['openbox'],stdout=log,stderr=log))
    stock_layout(home)
    processes.append(subprocess.Popen(['plasmashell'],stdout=log,stderr=log))
    try:wait_shell()
@@ -215,8 +220,13 @@ def main():
   logs=(output/'plasmashell.log').read_text()
   bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and not line.startswith('file:///usr/share/plasma/') and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
-  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':['Xvfb and Openbox; not a complete KWin/login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
+  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
  except Exception as failure:
+  for picture in ['applied.png','before.png']:
+   file=output/picture
+   if file.exists() and file.stat().st_size<500000:
+    print('XPLASMA_FAILURE_SCREENSHOT_BASE64 '+base64.b64encode(file.read_bytes()).decode(),flush=True)
+    break
   for source in [home/'.config/plasma-org.kde.plasma.desktop-appletsrc',home/'.local/share/xplasma/state.json']:
    if source.is_file():shutil.copy2(source,output/('failed-'+source.name))
   if isinstance(failure,subprocess.CalledProcessError) and failure.cmd[0]=='gdbus' and shutil.which('gdb'):

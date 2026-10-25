@@ -57,13 +57,15 @@ jobs:
           python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmllint /usr/lib/qt6/bin/qmllint --installed-series 6.3
       - name: Install virtual desktop test tools
         run: |
-          apt-get install -y xvfb openbox xterm imagemagick xdotool python3-pil libglib2.0-bin dbus-x11 procps
+          apt-get install -y xvfb openbox xterm imagemagick xdotool python3-pil libglib2.0-bin dbus-x11 procps kwin-wayland xwayland libgl1-mesa-dri
           cmake --install /tmp/build --prefix /tmp/xp/runtime
       - name: Exercise a real Plasma desktop in a disposable home
         env:
           QT_QPA_PLATFORM: xcb
           QT_QUICK_BACKEND: software
           LIBGL_ALWAYS_SOFTWARE: '1'
+          KWIN_COMPOSE: Q
+          QT_FORCE_STDERR_LOGGING: '1'
           DISPLAY: ':99'
           XDG_CURRENT_DESKTOP: KDE
           XDG_SESSION_TYPE: x11
@@ -77,7 +79,19 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets
+          cat > /tmp/xp-live-session.sh <<'SH'
+          #!/bin/sh
+          export QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland
+          exec python3 "$GITHUB_WORKSPACE/native/ci/live-desktop.py" --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets --nested-kwin
+          SH
+          chmod +x /tmp/xp-live-session.sh
+          result=0
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
+          mkdir -p /tmp/live-desktop-results
+          cp /tmp/kwin-session.log /tmp/live-desktop-results/kwin.log
+          cat /tmp/kwin-session.log
+          test "$result" = 0
+          python3 -c 'import json; assert json.load(open("/tmp/live-desktop-results/result.json"))["status"] == "passed"'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -193,15 +207,17 @@ jobs:
       - name: Install virtual desktop test tools
         run: |
           if [ "$XP_FAMILY" = dnf ]; then
-            dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng gdb
+            dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng gdb xorg-x11-server-Xwayland mesa-dri-drivers
           else
-            pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus gdb
+            pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus gdb xorg-xwayland mesa
           fi
       - name: Exercise a real Plasma desktop in a disposable home
         env:
           QT_QPA_PLATFORM: xcb
           QT_QUICK_BACKEND: software
           LIBGL_ALWAYS_SOFTWARE: '1'
+          KWIN_COMPOSE: Q
+          QT_FORCE_STDERR_LOGGING: '1'
           DISPLAY: ':99'
           XDG_CURRENT_DESKTOP: KDE
           XDG_SESSION_TYPE: x11
@@ -215,7 +231,19 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
-          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets
+          cat > /tmp/xp-live-session.sh <<'SH'
+          #!/bin/sh
+          export QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland
+          exec python3 "$GITHUB_WORKSPACE/native/ci/live-desktop.py" --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets --nested-kwin
+          SH
+          chmod +x /tmp/xp-live-session.sh
+          result=0
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
+          mkdir -p /tmp/live-desktop-results
+          cp /tmp/kwin-session.log /tmp/live-desktop-results/kwin.log
+          cat /tmp/kwin-session.log
+          test "$result" = 0
+          python3 -c 'import json; assert json.load(open("/tmp/live-desktop-results/result.json"))["status"] == "passed"'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
