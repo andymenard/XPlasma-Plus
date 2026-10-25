@@ -65,6 +65,20 @@ def layout(output,name):
  return {w['type'] for p in data for w in p['widgets']}
 
 
+def click_widget(widget):
+ js='print(JSON.stringify((function(){for (const p of panels()){for(const w of p.widgets()){if(w.type==='+json.dumps(widget)+'){const g=w.geometry;return {x:g.x+Math.min(40,g.width/2),y:800-p.height+g.y+g.height/2,width:g.width,height:g.height};}}}return null;})()))'
+ geometry=json.loads(script(js))
+ if not geometry or geometry['width']<=0 or geometry['height']<=0:raise RuntimeError('Widget has no visible representation: '+widget)
+ run(['xdotool','mousemove',str(round(geometry['x'])),str(round(geometry['y'])),'click','1'])
+
+
+def changed(output,before,after,box):
+ from PIL import Image,ImageChops
+ a=Image.open(output/(before+'.png')).convert('RGB').crop(box)
+ b=Image.open(output/(after+'.png')).convert('RGB').crop(box)
+ if not ImageChops.difference(a,b).getbbox():raise RuntimeError(after+' did not change the expected desktop region')
+
+
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
  home=Path.home();output=a.output.resolve();output.mkdir(parents=True,exist_ok=True)
@@ -94,15 +108,21 @@ def main():
    # Make the task manager render a real managed application window.
    processes.append(subprocess.Popen(['xterm','-title','XPlasmaLiveTest','-e','sleep','240'],stdout=log,stderr=log))
    time.sleep(3);snapshot(output,'applied')
-   run(['xdotool','mousemove','25','785','click','1']);time.sleep(3);snapshot(output,'start-menu')
-   from PIL import Image,ImageChops
-   idle=Image.open(output/'applied.png').convert('RGB');menu=Image.open(output/'start-menu.png').convert('RGB')
-   if not ImageChops.difference(idle.crop((0,200,500,760)),menu.crop((0,200,500,760))).getbbox():raise RuntimeError('Start click did not show a menu')
+   window=subprocess.check_output(['xdotool','search','--onlyvisible','--name','^XPlasmaLiveTest$'],text=True).splitlines()[-1]
+   run(['xdotool','windowminimize',window]);time.sleep(1)
+   click_widget('org.kde.plasma.taskmanager');time.sleep(2)
+   active=subprocess.check_output(['xdotool','getactivewindow'],text=True).strip()
+   if active!=window:raise RuntimeError('XP task button did not activate the application window')
+   click_widget('fyi.hotsocket.xplasma.start');time.sleep(3);snapshot(output,'start-menu')
+   changed(output,'applied','start-menu',(0,200,500,760))
    run(['xdotool','key','Escape']);time.sleep(1)
-   run(['xdotool','mousemove','1245','785','click','1']);time.sleep(2);snapshot(output,'clock-calendar')
-   run(['xdotool','key','Escape'])
+   snapshot(output,'clock-before')
+   click_widget('fyi.hotsocket.xplasma.clock');time.sleep(2);snapshot(output,'clock-calendar')
+   changed(output,'clock-before','clock-calendar',(780,100,1280,760))
+   run(['xdotool','key','Escape']);time.sleep(1);snapshot(output,'notification-before')
    run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaLiveTest','0','dialog-information','XPlasma live desktop test','Notification delivered by the real Plasma service','[]','{}','10000'])
    time.sleep(3);snapshot(output,'notification')
+   changed(output,'notification-before','notification',(0,100,1280,760))
    # Inspect the replacement plugins actually mapped by the running shell.
    for proc in Path('/proc').iterdir():
     if proc.name.isdigit():
@@ -121,7 +141,12 @@ def main():
   logs=(output/'plasmashell.log').read_text()
   bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
-  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','Start popup','clock click','notification delivery','reset'],'limits':['original geometric fixtures replace Windows bitmap assets','Xvfb and Openbox; not a complete KWin/login/hardware certification']},indent=2)+'\n')
+  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','task button activation','Start popup','clock calendar popup','notification popup','reset'],'limits':['original geometric fixtures replace Windows bitmap assets','Xvfb and Openbox; not a complete KWin/login/hardware certification']},indent=2)+'\n')
+ except Exception:
+  for logfile in sorted(output.glob('*.log')):
+   print('--- '+logfile.name+' ---',flush=True)
+   print('\n'.join(logfile.read_text(errors='replace').splitlines()[-100:]),flush=True)
+  raise
  finally:
   for process in reversed(processes):
    if process.poll() is None:process.terminate()
