@@ -55,6 +55,31 @@ jobs:
           cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/build --parallel 3 --target xplasma-runtime check-widget-patches
           python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmllint /usr/lib/qt6/bin/qmllint --installed-series 6.3
+      - name: Install virtual desktop test tools
+        run: |
+          apt-get install -y xvfb openbox xterm imagemagick xdotool python3-pil libglib2.0-bin dbus-x11 procps
+          cmake --install /tmp/build --prefix /tmp/xp/runtime
+      - name: Exercise a real Plasma desktop in a disposable home
+        env:
+          QT_QPA_PLATFORM: xcb
+          QT_QUICK_BACKEND: software
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          DISPLAY: ':99'
+        run: |
+          mkdir -p /tmp/xp-live-home /tmp/xp-live-runtime
+          chmod 700 /tmp/xp-live-runtime
+          touch /tmp/xp-live-home/.xplasma-disposable-desktop
+          Xvfb :99 -screen 0 1280x800x24 > /tmp/xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-desktop-debian-trixie
+          path: /tmp/live-desktop-results
+          retention-days: 7
   oldest-qt:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -150,3 +175,31 @@ jobs:
           mkdir -p /tmp/xp/source
           ln -s "$GITHUB_WORKSPACE/native" /tmp/xp/source/xplasma
           python3 installer/build-widgets.py /tmp/xp 3
+      - name: Install virtual desktop test tools
+        run: |
+          if [ "$XP_FAMILY" = dnf ]; then
+            dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng
+          else
+            pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus
+          fi
+      - name: Exercise a real Plasma desktop in a disposable home
+        env:
+          QT_QPA_PLATFORM: xcb
+          QT_QUICK_BACKEND: software
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          DISPLAY: ':99'
+        run: |
+          mkdir -p /tmp/xp-live-home /tmp/xp-live-runtime
+          chmod 700 /tmp/xp-live-runtime
+          touch /tmp/xp-live-home/.xplasma-disposable-desktop
+          Xvfb :99 -screen 0 1280x800x24 > /tmp/xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-desktop-plasma-${{ matrix.plasma }}
+          path: /tmp/live-desktop-results
+          retention-days: 7
