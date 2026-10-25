@@ -44,8 +44,8 @@ def main():
   native=root/'build'/project
   configure=['cmake','-S',patched/(project+'-'+sources[project]),'-B',native,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTING=OFF']
   # Only the panel applet is built from plasma-desktop. Its unrelated X11
-  # mouse KCM requires an SDK that older distribution packages don't ship.
-  if project=='plasma-desktop':configure+=['-DBUILD_KCM_MOUSE_X11=OFF']
+  # mouse/touchpad KCMs require SDKs that older packages do not ship.
+  if project=='plasma-desktop':configure+=['-DBUILD_KCM_MOUSE_X11=OFF','-DBUILD_KCM_TOUCHPAD_X11=OFF']
   run(configure)
   run(['cmake','--build',native,'--parallel',jobs,'--target',*pending])
   for name in pending:
@@ -57,3 +57,4 @@ def main():
    build_cache.store_component(plugin,relative,identities[name])
  (build/'widget-components.json').write_text(json.dumps(records,indent=2)+'\n')
 if __name__=='__main__':main()
+
