@@ -95,7 +95,7 @@ kbuildsycoca6 --noincremental
 cat > /tmp/xp-live-session.sh <<'SH'
 #!/bin/sh
 export QT_QPA_PLATFORM=wayland QT_QUICK_BACKEND=software XDG_SESSION_TYPE=wayland
-exec python3 /tmp/xp/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets --nested-kwin
+exec python3 /tmp/xp/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets --nested-kwin > /tmp/xplasma-driver.log 2>&1
 SH
 chmod +x /tmp/xp-live-session.sh
 result=0
@@ -103,6 +103,16 @@ dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --x
 mkdir -p /tmp/live-desktop-results
 cp /tmp/xplasma-xorg.log /tmp/xplasma-kwin.log /tmp/live-desktop-results/
 cat /tmp/xplasma-kwin.log
+printf 'Nested KWin exit status: %s\\n' "$result"
+if [ -f /tmp/xplasma-driver.log ]; then
+  cp /tmp/xplasma-driver.log /tmp/live-desktop-results/
+  cat /tmp/xplasma-driver.log
+fi
+if [ "$result" != 0 ] || [ ! -f /tmp/live-desktop-results/result.json ]; then
+  sudo journalctl --no-pager -b -n 100 > /tmp/live-desktop-results/guest-journal.log
+  sudo coredumpctl info --no-pager > /tmp/live-desktop-results/guest-coredumps.log 2>&1 || true
+  cat /tmp/live-desktop-results/guest-coredumps.log
+fi
 test "$result" = 0
 python3 -c 'import json; assert json.load(open("/tmp/live-desktop-results/result.json"))["status"] == "passed"'
 ''')
