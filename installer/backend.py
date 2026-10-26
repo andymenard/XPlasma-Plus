@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Transactional, feature-selectable portable KDE XP installer backend."""
-import argparse,configparser,hashlib,json,os,platform,re,shutil,subprocess,sys,tarfile,tempfile,traceback
+import argparse,configparser,fnmatch,hashlib,json,os,platform,re,shutil,subprocess,sys,tarfile,tempfile,traceback
 from pathlib import Path
 BASE=Path(__file__).resolve().parent
 sys.path.insert(0,str(BASE/'lib'))
@@ -173,16 +173,23 @@ class Snapshot:
   (self.state/'gnome-after.json').write_text(json.dumps(gnome())+'\n')
   snapshot_retention(self.home,self.state,True)
  def extend(self,paths):
-  # An upgrade keeps the original snapshot. Paths a newer release tracks that
-  # it did not have no earlier state than today's, so that becomes theirs.
+  # Keep the original snapshot, adding newly tracked paths and personal files
+  # created between installations. Otherwise finish() would record those files
+  # as installer output, and Remove would delete them after the upgrade.
   tracked=json.loads((self.state/'tracked.json').read_text())
   new=[p for p in paths if p not in tracked]
   self.paths=tracked+new
-  if not new:return
   before=json.loads((self.state/'before.json').read_text())
-  # (Except what already names XPlasma's looks: that is the XP desktop's
-  # state, not the user's, and Remove clears it as the installation's.)
-  data={name:value for name,value in inventory(self.home,new).items() if name not in before and not mentions_xplasma(self.home/name,name)}
+  previous=json.loads((self.state/'after.json').read_text()) if (self.state/'after.json').is_file() else {}
+  # Existing installer output and namespaced generated looks remain owned.
+  # A user's unrelated file must not become owned just because its text happens
+  # to mention XPlasma. Preserve the existing rule for newly tracked XP settings.
+  def personal(name):
+   if any(name==kept or name.startswith(kept+'/') for kept in USER_CONTENT):return True
+   if any(fnmatch.fnmatchcase(name,pattern) or fnmatch.fnmatchcase(name,pattern+'/*') for pattern in GENERATED+CACHES):return False
+   already_tracked=any(name==root or name.startswith(root.rstrip('/')+'/') for root in tracked)
+   return already_tracked or not mentions_xplasma(self.home/name,name)
+  data={name:value for name,value in inventory(self.home,self.paths).items() if name not in before and name not in previous and personal(name)}
   for name in data:copy(self.home/name,self.state/'backup'/name)
   before.update(data)
   (self.state/'before.json').write_text(json.dumps(before,indent=2)+'\n')

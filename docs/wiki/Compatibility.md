@@ -5,7 +5,7 @@
 1. Back up your personal files and desktop/system configuration. Save your work.
 2. Open **System Settings → About this System** (the location/name can vary), or run `plasmashell --version` in a terminal.
 3. Check your distribution release and architecture. `uname -m` reports `x86_64` for Intel/AMD 64-bit or `aarch64` for ARM64.
-4. Choose an installer from the [1.0.1 release](https://github.com/andymenard/XPlasma-Plus/releases/tag/v1.0.1).
+4. Choose an installer from the [1.0.2 release](https://github.com/andymenard/XPlasma-Plus/releases/tag/v1.0.2).
 
 ## Available installers
 
@@ -29,7 +29,7 @@ Plasma **6.0–6.4** ports patch the distribution's packaged QML to implement th
 
 The port matrix pins upstream source revisions for all existing Plasma 6 branches (6.0–6.8) and checks the production patcher against each branch's tray, task manager, panel, notifications and desktop QML. Source-patch and syntax checks are distinct from compilation and live desktop testing. Support for a future Plasma 6 branch must be added and checked before the XP taskbar is enabled there. Optional logout, lock and caption-effect integrations retain their separate compatibility checks.
 
-The current work is in progress: runtime testing across every distribution/branch is not complete. Published 1.0.1 installers do not include these source changes until rebuilt.
+The 1.0.2 installer includes these ports. Automated live desktop acceptance passed on Plasma 6.0.4, 6.1.2, 6.2.1, Debian 6.3.6, 6.4.3, 6.5.5, 6.6.4, 6.7.5 and 6.8.1. These disposable sessions test desktop interactions, apply/reapply, Classic switching and reset; they do not certify every distribution, complete login/hardware configuration or the system-wide installer lifecycle.
 
 APT, DNF, pacman, Zypper and Void Linux XBPS dependency adapters are included in the source installer. Void support is experimental and has not received a live installation test. Non-systemd sessions use an XDG autostart watcher for theme and cursor changes. Automatic login-screen/display-manager management still requires systemd; configure your non-systemd display manager separately. Boot splash needs an existing splash-enabled Plymouth setup using dracut or update-initramfs. Unsupported features are disabled with an explanation in Setup.
 

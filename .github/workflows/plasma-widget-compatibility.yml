@@ -9,6 +9,19 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  installer-transactions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check installer upgrade, rollback, removal and launcher
+        run: |
+          python3 -m unittest discover -s installer/tests -p test_upgrade.py -v
+          python3 -m unittest discover -s installer/tests -p test_uninstall.py -v
+          python3 -m unittest discover -s installer/tests -p test_install_script.py -v
   vm-graphics-probe:
     runs-on: ubuntu-24.04
     container: archlinux:latest

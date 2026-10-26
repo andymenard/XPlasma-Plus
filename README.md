@@ -1,7 +1,7 @@
 > [!WARNING]
 > **This project is vibecoded.** Hands-on testing has been limited to **Asahi Linux (ARM64)** and **Kubuntu on Intel/AMD x86-64**. Issues are expected; builds for other platforms do not mean they have been tested on real hardware. **I do not recommend installing this on a computer without backing up your data and system configuration first. While I personally run this on my main computers and have tried my best to audit the code, I am not a software engineer.**
 
-# XPlasma Plus — 1.0.1 Public Beta
+# XPlasma Plus — 1.0.2 Public Beta
 
 This is a project I've been working on for personal use that I wanted to share with anyone else who might enjoy it. This is a KDE Plasma transformation pack and **modified fork of [hotsocket's XPlasma](https://tangled.org/hotsocket.fyi/xplasma/)**. The native visual-style engine, Qt style, Properties editor and desktop generators are forked from that. This repository contains our (me and AI's) ports, integration and changes; it does not claim authorship of the upstream foundation. It also includes a KDE lock screen theme, SDDM theme, Plymouth boot splash theme, and icon theme with a special thanks to [marchmountain for the hi-res icons](https://github.com/marchmountain/-Windows-XP-High-Resolution-Icon-Pack).
 
@@ -122,7 +122,7 @@ rollback backup, selected features, theme and toolbar preferences.
 
 ## Download the installer
 
-See [1.0.1 Public Beta](https://github.com/andymenard/XPlasma-Plus/releases/tag/v1.0.1).
+See [1.0.2 Public Beta](https://github.com/andymenard/XPlasma-Plus/releases/tag/v1.0.2).
 Extract the installer tar.gz, then launch **Start-Installer.desktop** from the
 extracted folder as your desktop user. Linux dependencies require internet
 access; an XP ISO is not needed. Desktop is selected by default; Firefox is optional.
@@ -134,26 +134,27 @@ installer download; this release does not activate an OTA payload.
 
 | Download | Prebuilt target |
 | --- | --- |
-| [Kubuntu x86-64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.1/xplasma-plus-1.0.1-installer-kubuntu-26.04-amd64.tar.gz) | Kubuntu/Ubuntu 26.04, Intel/AMD 64-bit |
-| [Kubuntu ARM64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.1/xplasma-plus-1.0.1-installer-kubuntu-26.04-arm64.tar.gz) | Kubuntu/Ubuntu 26.04, ARM64 |
-| [Fedora x86-64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.1/xplasma-plus-1.0.1-installer-fedora-44-amd64.tar.gz) | Fedora 44, Intel/AMD 64-bit |
-| [Fedora ARM64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.1/xplasma-plus-1.0.1-installer-fedora-44-arm64.tar.gz) | Fedora 44 and matching Fedora Asahi Remix 44, ARM64 |
-| [Generic](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.1/xplasma-plus-1.0.1-installer-generic.tar.gz) | Builds locally on supported KDE systems |
+| [Kubuntu x86-64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.2/xplasma-plus-1.0.2-installer-kubuntu-26.04-amd64.tar.gz) | Kubuntu/Ubuntu 26.04, Intel/AMD 64-bit |
+| [Kubuntu ARM64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.2/xplasma-plus-1.0.2-installer-kubuntu-26.04-arm64.tar.gz) | Kubuntu/Ubuntu 26.04, ARM64 |
+| [Fedora x86-64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.2/xplasma-plus-1.0.2-installer-fedora-44-amd64.tar.gz) | Fedora 44, Intel/AMD 64-bit |
+| [Fedora ARM64](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.2/xplasma-plus-1.0.2-installer-fedora-44-arm64.tar.gz) | Fedora 44 and matching Fedora Asahi Remix 44, ARM64 |
+| [Generic](https://github.com/andymenard/XPlasma-Plus/releases/download/v1.0.2/xplasma-plus-1.0.2-installer-generic.tar.gz) | Builds locally on supported KDE systems |
 
 Prebuilt components are used only when the distribution, architecture, Qt,
 Plasma and source identity match; otherwise the installer builds locally.
 The caption effect additionally checks the exact KWin build. All variants
 include the same desktop features, optional Firefox theme and source fallback.
-The generic installer supports APT, DNF, pacman and Zypper families; the bundled
-native Plasma integrations currently target Plasma 6.6/Qt 6.10 and
-Plasma 6.7/Qt 6.11 or newer Qt within the supported Plasma series. Other versions
-may have unavailable components. Dependency installation needs internet access.
+The generic installer supports APT, DNF, pacman and Zypper families, plus
+experimental Void/XBPS support. The actual XP Start menu, task buttons, clock,
+tray and notifications support Plasma 6.0–6.8; each branch has passed automated
+live desktop acceptance. Qt 6.6 or newer and the matching per-branch Qt API floor
+are required. Optional lock, logout and caption-effect integrations have separate
+compatibility checks. Dependency installation needs internet access.
 
-The source branch is extending the actual XP widget ports to Plasma 6.0–6.8.
-It keeps the XP Start menu, task buttons, clock, tray and notifications required;
-there is no stock-widget compatibility fallback. See [compatibility status](docs/wiki/Compatibility.md)
-for the port matrix and remaining compilation/live-testing limits. These changes
-are not yet included in the published 1.0.1 archives.
+XP widgets remain required: an unsupported layout or failed build stops
+installation and provides a copyable diagnostic report. See
+[compatibility status](docs/wiki/Compatibility.md) for version details and the
+limits of disposable desktop testing.
 
 ## Boot splash troubleshooting
 

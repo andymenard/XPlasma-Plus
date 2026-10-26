@@ -110,6 +110,38 @@ class Upgrade(unittest.TestCase):
   # (Paths it already had keep their original state.)
   self.assertEqual((state/'backup/.config/kdeglobals').read_text(),'[General]\nfont=Noto Sans,10\n')
 
+ def test_personal_files_added_between_releases_survive_upgrade_and_remove(self):
+  self.install_v1()
+  folder=self.home/'.local/share/plasma/avatars';folder.mkdir(parents=True,exist_ok=True)
+  personal=folder/'my-picture.txt';personal.write_text('personal notes about XPlasma')
+  self.release='v2';b.install({'desktop','taskbar'},'Luna Blue')
+  second=folder/'another-picture.txt';second.write_text('another personal picture')
+  self.release='v3';b.install({'desktop','taskbar'},'Luna Blue')
+  self.assertEqual((self.state()/'backup/.config/kdeglobals').read_text(),'[General]\nfont=Noto Sans,10\n')
+  b.uninstall()
+  self.assertEqual(personal.read_text(),'personal notes about XPlasma')
+  self.assertEqual(second.read_text(),'another personal picture')
+  self.assertEqual(self.kdeglobals.read_text(),'[General]\nfont=Noto Sans,10\n')
+
+ def test_personal_file_survives_failed_upgrade_and_later_remove(self):
+  self.install_v1()
+  folder=self.home/'.local/share/plasma/avatars';folder.mkdir(parents=True,exist_ok=True)
+  personal=folder/'my-picture.txt';personal.write_text('keep through rollback')
+  self.release='v2';self.broken=True
+  with self.assertRaises(RuntimeError):b.install({'desktop','taskbar'},'Luna Blue')
+  self.assertEqual(personal.read_text(),'keep through rollback')
+  b.uninstall()
+  self.assertEqual(personal.read_text(),'keep through rollback')
+
+ def test_upgrade_does_not_adopt_generated_look_assets_as_personal_files(self):
+  self.install_v1()
+  generated=self.home/'.local/share/themes/XPlasma-xplasma-v2-later/icon.png'
+  generated.parent.mkdir(parents=True);generated.write_bytes(b'generated artwork without a text marker')
+  self.release='v2';b.install({'desktop','taskbar'},'Luna Blue')
+  self.assertNotIn(str(generated.relative_to(self.home)),json.loads((self.state()/'before.json').read_text()))
+  b.uninstall()
+  self.assertFalse(generated.exists())
+
  def test_failed_upgrade_takes_back_screens_it_added(self):
   self.install_v1()
   self.release='v2';self.broken=True;self.calls.clear()
