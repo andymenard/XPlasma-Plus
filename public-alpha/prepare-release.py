@@ -45,25 +45,31 @@ def main():
    shutil.rmtree(suite)
   shutil.copytree(a.base,suite,symlinks=True,ignore=shutil.ignore_patterns('__pycache__','*.pyc','prebuilt'))
   (suite/'RELEASE-STAGING.json').write_text(json.dumps({'version':version,'variant':target})+'\n')
-  entries=[]
+  entries=[];compatibility=[]
   if target!='generic':
    cache=a.prebuilt_root/target
    if not cache.is_dir():raise RuntimeError('Missing prebuilt input: '+target)
    shutil.copytree(cache,suite/'prebuilt',symlinks=True)
-   complete=0
+   complete=0;asahi=0
    for manifest in sorted((suite/'prebuilt').rglob('manifest.json')):
     data=json.loads(manifest.read_text());identity=data['identity']
     if identity.get('schema')==1:
      if identity.get('source')!=source_id or not build_cache.validate(manifest.parent,identity):raise RuntimeError('Stale or invalid complete runtime: '+str(manifest))
      expected_arch=target.rsplit('-',1)[1]
      expected_distribution='ubuntu' if target.startswith('kubuntu-') else 'fedora'
-     if identity['arch']!=expected_arch or identity['distribution']!=expected_distribution:raise RuntimeError('Wrong runtime target: '+target)
-     complete+=1
+     if identity['arch']!=expected_arch:raise RuntimeError('Wrong runtime architecture: '+target)
+     if identity['distribution']==expected_distribution:complete+=1
+     elif target=='fedora-44-arm64' and identity['distribution']=='fedora-asahi-remix':
+      origin=data.get('compatibility_origin',{});checked=data.get('compatibility_validation',{})
+      if origin.get('distribution')!='fedora' or any(origin.get(k)!=identity.get(k) for k in ['release','arch','qt','plasma','source','plasma_sources']):raise RuntimeError('Asahi compatibility origin differs')
+      if not all(checked.get(k) is True for k in ['linker','exact_caption_abi','native_cli']):raise RuntimeError('Asahi runtime was not validated on its target host')
+      asahi+=1;compatibility.append({'origin':origin,'validation':checked})
+     else:raise RuntimeError('Wrong runtime target: '+target)
     elif not build_cache.validate_component(manifest.parent,identity):raise RuntimeError('Invalid component cache: '+str(manifest))
     entries.append(identity)
-   if complete!=1:raise RuntimeError('Expected exactly one freshly built complete runtime: '+target)
+   if complete!=1 or asahi>1:raise RuntimeError('Expected one primary runtime and at most one validated Asahi runtime: '+target)
   record={'release':version,'variant':target,'source_commit':a.source_commit,'native_source_sha256':source_id,
-          'ci_run':a.build_run,'ci_build_commit':a.build_commit,'prebuilt':entries,'ota_included':False}
+          'ci_run':a.build_run,'ci_build_commit':a.build_commit,'prebuilt':entries,'compatibility_validations':compatibility,'ota_included':False}
   (suite/'BUILD-PROVENANCE.json').write_text(json.dumps(record,indent=2)+'\n');provenance.append(record)
   (suite/'VARIANT.txt').write_text('XPlasma Plus '+edition['label']+' — '+target+'\nMatching verified binaries are used when available; other supported environments build locally.\n')
   shutil.copy2(release_notes,suite/'RELEASE-NOTES.md')

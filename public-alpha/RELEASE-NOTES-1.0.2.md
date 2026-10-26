@@ -12,7 +12,7 @@ This update fixes installation and visual issues and expands the actual XP deskt
 
 ## Downloads
 
-Choose the generic installer or the matching Kubuntu/Ubuntu 26.04 or Fedora 44 installer for x86-64 (`amd64`) or ARM64. A verified matching runtime speeds installation. If the distribution, Qt, Plasma, KWin or source identity differs, supported components build locally. No GitHub account is needed for installation.
+Choose the generic installer or the matching Kubuntu/Ubuntu 26.04 or Fedora 44 installer for x86-64 (`amd64`) or ARM64. A verified matching runtime speeds installation. If the distribution, Qt, Plasma, KWin or source identity differs, supported components build locally. The Fedora ARM64 archive also includes the Fedora-built runtime validated against the matching Asahi Remix 44 libraries, native CLI and exact KWin caption ABI. No GitHub account is needed for installation.
 
 ## Upgrade
 
