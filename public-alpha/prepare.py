@@ -30,7 +30,7 @@ def source(destination):
  for name in sorted(set(paths)-{''}):
   p=Path(name)
   if p.parts[0] not in KEEP:continue
-  if p.parts[0]=='.github' and name!='.github/workflows/prebuilt-kubuntu.yml':continue
+  if p.parts[0]=='.github' and name not in {'.github/workflows/prebuilt-kubuntu.yml','.github/workflows/plasma-widget-compatibility.yml'}:continue
   if name in PRIVATE_RELEASE_TESTS:continue
   if name.startswith('tools/dark-theme/tests/') or '__pycache__' in p.parts:continue
   included_os_font = name in {'installer/assets/fonts/tahoma-os/tahoma-os.ttf','installer/assets/fonts/tahoma-os/tahoma-os-bold.ttf'}

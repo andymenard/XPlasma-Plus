@@ -966,8 +966,7 @@ bool applyLook(Session &session, const Look &requestedLook, const ApplyOptions &
                 || !installClockPlasmoid(share(QStringLiteral("plasma/plasmoids")), error))))
                 return false;
             if (!colorOnly && !overrides::installPanelWidgets(share(QStringLiteral("plasma/plasmoids")), &why))
-                for (const QString &line : why.split(QLatin1Char('\n')))
-                    report(o, QStringLiteral("  left as Plasma's own: %1").arg(line));
+                return fail(error, QStringLiteral("the XP widgets could not be installed; stock widgets are not a substitute:\n%1").arg(why));
             if (builds) {
                 if (!forks::install(session, *builds, state, error))
                     return false;

@@ -38,3 +38,6 @@ add_executable(test-cachepreferences test_cachepreferences.cpp ${PROJECT_SOURCE_
 target_link_libraries(test-cachepreferences PRIVATE stdc++ xplasma-app Qt6::Widgets Qt6::Test)
 add_test(NAME test-cachepreferences COMMAND test-cachepreferences)
 set_tests_properties(test-cachepreferences PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_STYLE_OVERRIDE=Fusion")
+
+add_executable(check-widget-patches check_widget_patches.cpp)
+target_link_libraries(check-widget-patches PRIVATE stdc++ xplasma-app Qt6::Core)

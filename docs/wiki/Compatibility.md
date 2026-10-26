@@ -23,8 +23,16 @@ Prebuilt components are accepted only when distribution, release, architecture, 
 
 ## Plasma and Qt versions
 
-The bundled native Plasma integrations support **Plasma 6.6 / Qt 6.10+** and **Plasma 6.7 / Qt 6.11+**. **Plasma 6.8 is not fully supported in 1.0.1**: taskbar integration, session/logout dialogs, lock screen and caption animations are disabled by the installer's version checks. A generic installer does not bypass these limits.
+The generic source installer keeps the XP Start menu, task buttons, clock, tray and notification UI. It does not substitute stock widgets when an XP port or plugin cannot be installed.
 
-APT, DNF, pacman and Zypper dependency adapters are included. This is not a promise of compatibility with every distribution. Unsupported features are disabled with an explanation in Setup. Login/session integrations require systemd; boot splash needs an existing splash-enabled Plymouth setup using dracut or update-initramfs.
+Plasma **6.0–6.4** ports patch the distribution's packaged QML to implement the XP behavior. Plasma **6.5** needs compiled XP notification and panel replacements as well as packaged task-manager and tray patches. Plasma **6.6–6.8** use the matching compiled widget recipes. The installer checks Qt and the running Plasma series, builds the needed XP components, and verifies that the XP Start button, task buttons and clock load. Missing components fail installation and trigger recovery.
+
+The port matrix pins upstream source revisions for all existing Plasma 6 branches (6.0–6.8) and checks the production patcher against each branch's tray, task manager, panel, notifications and desktop QML. Source-patch and syntax checks are distinct from compilation and live desktop testing. Support for a future Plasma 6 branch must be added and checked before the XP taskbar is enabled there. Optional logout, lock and caption-effect integrations retain their separate compatibility checks.
+
+The current work is in progress: runtime testing across every distribution/branch is not complete. Published 1.0.1 installers do not include these source changes until rebuilt.
+
+APT, DNF, pacman, Zypper and Void Linux XBPS dependency adapters are included in the source installer. Void support is experimental and has not received a live installation test. Non-systemd sessions use an XDG autostart watcher for theme and cursor changes. Automatic login-screen/display-manager management still requires systemd; configure your non-systemd display manager separately. Boot splash needs an existing splash-enabled Plymouth setup using dracut or update-initramfs. Unsupported features are disabled with an explanation in Setup.
+
+If APT dependency installation fails, copy the output before the final `CalledProcessError`. The current installer refreshes package indexes before selecting library names and reports packages without installation candidates explicitly. A final pkexec exit code alone cannot distinguish authentication, repository, network or dependency errors.
 
 Continue to [Installation](Installation.md).

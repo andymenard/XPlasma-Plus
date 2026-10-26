@@ -86,7 +86,10 @@
 #reload-button { order:1 !important; }
 #history-panelmenu .toolbarbutton-text { display:none !important; }
 #urlbar-go-button { display:flex !important; list-style-image:url("ie6-icons/sized/forward.svg") !important; width:22px !important; height:22px !important; }
-#PersonalToolbar:empty { display:none !important; }
+/* Firefox keeps structural children even with no bookmarks. Wait for its
+   initialized view so hiding the toolbar cannot prevent Places from loading.
+   Keep it available while customizing so bookmarks can still be dragged in. */
+:root:not([customizing]) #PersonalToolbar[initialized]:not(:has(#PlacesToolbarItems > .bookmark-item)) { display:none !important; }
 #nav-bar :is(#back-button,#forward-button,#stop-button,#reload-button,#home-button,#bookmarks-menu-button,#history-panelmenu,#downloads-button,#print-button) .toolbarbutton-icon { width:24px !important; height:24px !important; }
 #personal-toolbar-empty-description { display:none !important; }
 /* Actual IE6-style controls supplied by the local toolbar configuration. */

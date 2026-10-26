@@ -6,7 +6,7 @@ BASE=Path(__file__).resolve().parent
 sys.path.insert(0,str(BASE/'lib'))
 import tomlkit
 ACCESSORIES={'notepad','calculator','paint','picture_viewer','media_player','sound_recorder','volume_control','command_prompt','task_manager','pinball','minesweeper','solitaire'}
-from system_profile import detect,capabilities
+from system_profile import detect,capabilities,widget_target
 STATE_NAME='kde-xp-suite'
 FEATURES=json.loads((BASE/'features.json').read_text())
 KNOWN={f['id'] for f in FEATURES}
@@ -20,7 +20,7 @@ USER_PATHS=['.local/share/applications/fyi.hotsocket.xp.accessories.desktop','.l
  '.config/plasmashellrc','.config/plasma-org.kde.plasma.desktop-appletsrc','.config/ksplashrc','.local/share/plasma/look-and-feel/local.xp.welcome.desktop','.config/xplasmarc','.config/plasma_workspace.notifyrc','.config/ksmserver.notifyrc',
  '.config/gtk-3.0','.config/gtk-4.0','.config/fontconfig','.config/plasma-workspace/env',
  '.local/share/applications/fyi.hotsocket.xp.caption-animation.desktop','.config/autostart/xp-decoration-compatibility.desktop','.config/autostart/kde-xp-suite-rebuild.desktop','.config/systemd/user/xp-session-theme.path','.config/systemd/user/xp-session-theme.service',
- '.config/systemd/user/xp-cursor-sync.path','.config/systemd/user/xp-cursor-sync.service',
+ '.config/systemd/user/xp-cursor-sync.path','.config/systemd/user/xp-cursor-sync.service','.config/autostart/xp-theme-watch.desktop',
  '.local/share/plasma','.local/share/knotifications6/xplasma.notifyrc','.local/share/aurorae','.local/share/kwin','.local/share/color-schemes',
  '.local/share/icons','.local/share/fonts/xp','.local/share/themes','.local/share/xplasma','.local/share/sounds',
  '.local/lib/qt6/plugins','.local/share/flatpak/overrides','.local/share/flatpak/extension',
@@ -64,6 +64,10 @@ GNOME_KEYS=['gtk-theme','icon-theme','font-name','monospace-font-name','cursor-t
 def log(message):print(message,flush=True)
 def phase(message):print('@@'+json.dumps({'phase':message}),flush=True)
 def run(args,capture=False,check=True,env=None):
+ # Non-systemd Plasma sessions use the XDG autostart watcher below. Queries
+ # must still report an inactive unit to the backup and restore paths.
+ if args and args[0]=='systemctl' and not detect()['systemd']:
+  return '' if capture else 1
  if capture:
   p=subprocess.run(list(map(str,args)),text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=check,env=env)
   return p.stdout.strip()
@@ -270,7 +274,9 @@ def root(action,selected=(),native_ready=False,caption_ready=False,upgrade=False
  # (The prompt pkexec brings up draws with the fonts there now, even if an
  # earlier installation or Remove changed them since the agent started.)
  restart_auth_agent(settle=True)
- args=['pkexec',sys.executable,BASE/'root_helper.py',action,'--features',','.join(sorted(selected))]
+ # The helper only uses the standard library. A caller's virtualenv may
+ # reference an interpreter or libraries pkexec cannot use after elevation.
+ args=['pkexec','/usr/bin/python3',BASE/'root_helper.py',action,'--features',','.join(sorted(selected))]
  if native_ready:args.append('--native-ready')
  if caption_ready:args.append('--caption-ready')
  if upgrade:args.append('--upgrade')
@@ -321,7 +327,7 @@ def prepare_native(home,state,selected,theme,asset_options=None,keep_theme=False
  if 'fonts' in selected:copy(BASE/'payload/assets/fonts',home/'.local/share/fonts/xp');run(['fc-cache','-f'])
  build=state/'build'
  phase('Preparing desktop components — first installation may take several minutes')
- run([BASE/'build-native.sh',build,'taskbar' if 'taskbar' in selected else 'core'])
+ run([BASE/'build-native.sh',build,'taskbar' if 'taskbar' in selected and widget_target(detect()) else 'core'])
  copy(build/'runtime',state/'runtime')
  cli=state/'runtime/bin/xplasma';choice=presets(home)/(theme+'.theme')
  if keep_theme:choice=current_theme(home) or choice
@@ -430,9 +436,19 @@ def behavior(home,state,upgrade=False):
 def session(home,state):
  dest=home/'.local/share/plasma/look-and-feel/local.xp.session.desktop';copy(state/'templates/session',dest)
  run(['kwriteconfig6','--file','kdeglobals','--group','KDE','--key','LookAndFeelPackage','local.xp.session.desktop'])
- units=home/'.config/systemd/user';units.mkdir(parents=True,exist_ok=True)
- for name in ['xp-session-theme.path','xp-session-theme.service']:copy(state/'runtime/tools'/name,units/name)
- run(['systemctl','--user','daemon-reload']);run(['systemctl','--user','enable','--now','xp-session-theme.path'])
+ session_watch(home,state)
+def session_watch(home,state):
+ if detect()['systemd']:
+  units=home/'.config/systemd/user';units.mkdir(parents=True,exist_ok=True)
+  for name in ['xp-session-theme.path','xp-session-theme.service']:copy(state/'runtime/tools'/name,units/name)
+  run(['systemctl','--user','daemon-reload']);run(['systemctl','--user','enable','--now','xp-session-theme.path'])
+ else:
+  helper=home/'.local/share/xplasma/theme-watch.py';copy(BASE/'theme_watch.py',helper)
+  entry=home/'.config/autostart/xp-theme-watch.desktop';entry.parent.mkdir(parents=True,exist_ok=True)
+  # Desktop Exec fields need quoting independently of shell syntax.
+  def quote(value):return '"'+str(value).replace('\\','\\\\').replace('"','\\"').replace('`','\\`').replace('$','\\$').replace('%','%%')+'"'
+  entry.write_text('[Desktop Entry]\nType=Application\nName=XPlasma theme synchronization\nExec='+quote(sys.executable)+' '+quote(helper)+'\nOnlyShowIn=KDE;\n')
+  subprocess.Popen([sys.executable,str(helper)],start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 def taskbar_defaults(home,selected):
  # Seed the installer's Quick Launch once. Later theme changes retain edits.
  roots=[home/'.local/share/applications',Path('/usr/local/share/applications'),Path('/usr/share/applications'),
@@ -473,15 +489,14 @@ def desktop_updates(home,state,selected,asset_options=None):
   run([sys.executable,tools/'xp-window-outlines.py'])
  if 'desktop' in selected:run([sys.executable,tools/'xp-decoration.py'])
  if selected&{'desktop','taskbar','behavior','session'}:
-  units=home/'.config/systemd/user'
-  for name in ['xp-session-theme.path','xp-session-theme.service']:copy(tools/name,units/name)
-  run(['systemctl','--user','daemon-reload']);run(['systemctl','--user','enable','--now','xp-session-theme.path'])
+  session_watch(home,state)
  if 'pointers' in selected:
   helper=home/'.local/share/xplasma/cursor-sync.py';copy(tools/'cursor-sync.py',helper)
   if run([sys.executable,helper],check=False)==0:
    if detect()['systemd']:
     for name in ['xp-cursor-sync.path','xp-cursor-sync.service']:copy(tools/name,home/'.config/systemd/user'/name)
     run(['systemctl','--user','daemon-reload']);run(['systemctl','--user','enable','--now','xp-cursor-sync.path'])
+   else:session_watch(home,state)
   else:log('Existing shared cursor fallback preserved; no application override was installed.')
  if 'caption_animation' in selected:caption_animation(home)
 
@@ -641,13 +656,13 @@ def install(selected,theme,asset_options=None):
  phase('Preparing Linux dependencies — authentication may be requested')
  if detect()['family'] and selected&(NATIVE|ACCESSORIES|{'login','boot','firefox','explorer','control_panel','tray','caption_animation','icons'}):
   import build_cache
-  cached=build_cache.find(BASE,'taskbar' if 'taskbar' in selected else 'core') if selected&NATIVE else None
+  cached=build_cache.find(BASE,'taskbar' if 'taskbar' in selected and widget_target(detect()) else 'core') if selected&NATIVE else None
   ready=bool(cached and build_cache.usable(cached))
   if ready:log('A verified prebuilt package matches this distribution, architecture, Qt and Plasma version.')
   caption_was_ready=bool(build_cache.find_caption(BASE))
   root('dependencies',selected,native_ready=ready,caption_ready=caption_was_ready)
   if ready or caption_was_ready:
-   after=build_cache.find(BASE,'taskbar' if 'taskbar' in selected else 'core')
+   after=build_cache.find(BASE,'taskbar' if 'taskbar' in selected and widget_target(detect()) else 'core')
    still_ready=bool(after and build_cache.usable(after))
    caption_ok=bool(build_cache.find_caption(BASE))
    if (ready and not still_ready) or ('caption_animation' in selected and caption_was_ready and not caption_ok):
@@ -888,3 +903,4 @@ def main():
 if __name__=='__main__':
  try:sys.exit(main())
  except Exception as e:log('ERROR: '+str(e));traceback.print_exc();sys.exit(1)
+

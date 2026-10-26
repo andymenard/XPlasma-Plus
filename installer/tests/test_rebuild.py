@@ -68,7 +68,7 @@ class Rebuild(unittest.TestCase):
   self.calls=[];self.broken=False;self.family=None;self.taskbar_ok=True
   patcher=patch.dict(os.environ,{'HOME':str(self.home)});patcher.start();self.addCleanup(patcher.stop)
   stubs={'BASE':self.bundle,'preflight':lambda selected,installed=():None,'verify':lambda:None,'root':self.root,
-         'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':self.family,'plasma':(6,7,5)},'desktop_path':lambda home:home/'Desktop',
+         'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':self.family,'plasma':(6,7,5),'qt':(6,11,2),'systemd':True},'desktop_path':lambda home:home/'Desktop',
          'prepare_native':self.native,'basic':lambda *a,**k:None,'verify_taskbar':self.verify,'desktop_updates':lambda *a,**k:None,'caption_animation':lambda home:self.calls.append('caption'),
          'taskbar_defaults':lambda home,selected:None,'refresh':lambda home,state:None}
   for name,value in stubs.items():

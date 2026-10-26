@@ -14,6 +14,7 @@
 #include <QHash>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonDocument>
 #include <QMap>
 #include <QPainter>
 #include <QRegularExpression>

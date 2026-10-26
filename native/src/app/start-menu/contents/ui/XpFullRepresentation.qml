@@ -45,10 +45,10 @@ Item {
     // The XP artwork includes its own edges. AppletPopup otherwise asks
     // KWin for the Plasma theme's border/shadow tiles around the menu.
     Binding {
-        target: root.Window.window
+        target: popupGuard.bordersWritable ? root.Window.window : null
         property: "borders"
         value: 0
-        when: root.Window.window !== null && root.Window.window.hasOwnProperty("borders")
+        when: popupGuard.bordersWritable
         restoreMode: Binding.RestoreBindingOrValue
     }
     // PopupPlasmaWindow recalculates its borders after positioning on
@@ -58,7 +58,7 @@ Item {
         ignoreUnknownSignals: true
         function onBordersChanged() {
             const window = root.Window.window;
-            if (window && window.hasOwnProperty("borders") && window.borders !== 0)
+            if (window && popupGuard.bordersWritable && window.borders !== 0)
                 window.borders = 0;
         }
     }
@@ -123,7 +123,7 @@ Item {
         when: root.panelSeparator !== null
         restoreMode: Binding.RestoreBindingOrValue
     }
-    PopupGuard.ResizeGuard { window: root.Window.window }
+    PopupGuard.ResizeGuard { id: popupGuard; window: root.Window.window }
     Component {
         id: nativeIcon
         Kirigami.Icon { source: parent.iconSource; smooth: false }
@@ -205,3 +205,4 @@ Item {
     }
     Component.onCompleted: root.launcher.rootModel.refresh()
 }
+

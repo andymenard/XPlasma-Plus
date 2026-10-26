@@ -149,6 +149,12 @@ native Plasma integrations currently target Plasma 6.6/Qt 6.10 and
 Plasma 6.7/Qt 6.11 or newer Qt within the supported Plasma series. Other versions
 may have unavailable components. Dependency installation needs internet access.
 
+The source branch is extending the actual XP widget ports to Plasma 6.0–6.8.
+It keeps the XP Start menu, task buttons, clock, tray and notifications required;
+there is no stock-widget compatibility fallback. See [compatibility status](docs/wiki/Compatibility.md)
+for the port matrix and remaining compilation/live-testing limits. These changes
+are not yet included in the published 1.0.1 archives.
+
 ## Boot splash troubleshooting
 
 If the boot splash stays black or flickers, see [Boot splash troubleshooting](BOOT-SPLASH-TROUBLESHOOTING.md) for the optional Intel early-driver workaround confirmed on a docked laptop. This is a manual troubleshooting step; the installer does not apply it automatically.

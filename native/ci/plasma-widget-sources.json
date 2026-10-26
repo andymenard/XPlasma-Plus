@@ -1,0 +1,797 @@
+{
+  "schema": 1,
+  "branches": {
+    "6.0": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "9becd77c3a8681063bdacf37c0439122038bffbf",
+          "version": "6.0.5",
+          "qt": "6.6.0"
+        },
+        "plasma-workspace": {
+          "commit": "918cb38c3522ffcc241ac6a22b6741e41cdd3c30",
+          "version": "6.0.5",
+          "qt": "6.6.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/main.qml",
+          "blob": "ae8c4dfc3eff233b19e353509c44bb33ccc1d8db"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/Task.qml",
+          "blob": "d57d627c4665391fe48b8c56d4152006880f3aa3"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/code/layout.js",
+          "blob": "43d31436ef3cc824247e1b7fc37bf98bba4a7e77"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/contents/ui/main.qml",
+          "blob": "d5a9325a3899ab2055e76f7f894027fe9f361680"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "643d9f0235d880e412a4aaf865a65371788006f9"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "159866449c39425ab3bb968ae1b72e72727105b4"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "7f4e84928b79459619ed8f75408f3a62d10c6c62"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/main.qml",
+          "blob": "4069725685ba4433aa46f4ccba8e6ff967200f9f"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/items/AbstractItem.qml",
+          "blob": "decbb9efcb14d06916820a1cea5749bdad952d27"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/main.qml",
+          "blob": "a5214d1cb0402fe3c36c6cca39c169452aad89d0"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/global/Globals.qml",
+          "blob": "c46c32921afae1e039fa9db1df2de8c8b4057cd1"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/HiddenItemsView.qml",
+          "blob": "0c4514a847d340ba38de05a72d7b3263d6f7dc1d"
+        }
+      ]
+    },
+    "6.1": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "c75143b89a2ae68b2b0fc75b8844ca9dedf8de59",
+          "version": "6.1.6",
+          "qt": "6.6.0"
+        },
+        "plasma-workspace": {
+          "commit": "c4ad35ce20e2cda5f26399f7167adf410156e133",
+          "version": "6.1.6",
+          "qt": "6.6.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/main.qml",
+          "blob": "e741b60c7e9ed721c483656659894eda7d097e8a"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/Task.qml",
+          "blob": "aaa719742319ad1e8785588aa81a6addceb4e160"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/code/layoutmetrics.js",
+          "blob": "7e4a0d34f4b04e9ce6a8c14ed80210bf25c04a69"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/contents/ui/main.qml",
+          "blob": "ce1c0014fe1e28083cae21b0fc884d3caa9d31dd"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "3600231bf56a5c51eae0c91ef854a1a2b029c002"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "e057059d0273288b3dd93522f6becd87a5ebfb96"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "16e32b8845fa2cd04cafe485c9a01bba207dedd2"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/main.qml",
+          "blob": "c89cf859be54a15216726e470049ec8be32b4fa7"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/items/AbstractItem.qml",
+          "blob": "5a28eb4803297a1772dede3f180eaa084d53ff29"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/main.qml",
+          "blob": "5b2cfa43ac8e1f5e67b5f2b2be94fd0635ffeaa7"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/global/Globals.qml",
+          "blob": "c46c32921afae1e039fa9db1df2de8c8b4057cd1"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/HiddenItemsView.qml",
+          "blob": "0c4514a847d340ba38de05a72d7b3263d6f7dc1d"
+        }
+      ]
+    },
+    "6.2": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "20232ff43e9d1e624f0545addb9694cf1065b47a",
+          "version": "6.2.5",
+          "qt": "6.7.0"
+        },
+        "plasma-workspace": {
+          "commit": "272db5d4efaf7597908bba0df9b7a309c1ce352d",
+          "version": "6.2.5",
+          "qt": "6.7.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/main.qml",
+          "blob": "bd1e1a792f7e40bb1040760131d41db1bfae008f"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/Task.qml",
+          "blob": "0f3564b68c90e4685de66f15ae61831e315d8016"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/code/layoutmetrics.js",
+          "blob": "c7f11c99a6a60b13ff463a7adc24e8e4f4f6c543"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/contents/ui/main.qml",
+          "blob": "e69131d6a68c79d9a49a310bf72bc2a48588c78d"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "195a94147f75adc66cd8dff598bd2db7ad0f5e3c"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "6477fca9318a657edb17e8dc27a179fe7edf8733"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "924807ede3a94db70d00f94965dc45a2a023bb3a"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/main.qml",
+          "blob": "5bee4ee557bb7ee1b840029c5dbfbc7090c339f1"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/items/AbstractItem.qml",
+          "blob": "7e604c6dcec847432c1c54f9a6577bd6ea35392a"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/main.qml",
+          "blob": "5b2cfa43ac8e1f5e67b5f2b2be94fd0635ffeaa7"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/global/Globals.qml",
+          "blob": "c46c32921afae1e039fa9db1df2de8c8b4057cd1"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/HiddenItemsView.qml",
+          "blob": "bad31924d57c8460850361eae43ebec2c446d84f"
+        }
+      ]
+    },
+    "6.3": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "462c4f426e9bf683820d1fc04bb7d9ccdc8d90e4",
+          "version": "6.3.6",
+          "qt": "6.7.0"
+        },
+        "plasma-workspace": {
+          "commit": "63e4bad2fe4bfc2b8c42f6347f61d2418cc7143c",
+          "version": "6.3.6",
+          "qt": "6.7.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/main.qml",
+          "blob": "a294cdba7bec455d5b4e3c91f5b45b36165621ed"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/Task.qml",
+          "blob": "0a77b186e4309394baab7cf0319322326325dec5"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/code/layoutmetrics.js",
+          "blob": "895cc725d2cac9e8e94ad8f8340e11c83eea5db1"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/contents/ui/main.qml",
+          "blob": "3355b7237dc868ffef900628a071e43e79748bf3"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "8a5df92160186a49b0d428eb166d8b5d7731ebf6"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "0631d182e3ee110f8ffd6ce50e8f9a7aeb261694"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "4ddcc14d830c5e1fe1e5ffac6ebfecc5ca670bd3"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/main.qml",
+          "blob": "4d66713075a64361f0eb39b63f97f30e2ee3ce4c"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/items/AbstractItem.qml",
+          "blob": "7e604c6dcec847432c1c54f9a6577bd6ea35392a"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/main.qml",
+          "blob": "93b2949334ba354b89482ce52c1699356657625c"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/global/Globals.qml",
+          "blob": "b2027f814f82cc04016b7f314e4ec8d9b3eac6df"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/HiddenItemsView.qml",
+          "blob": "bad31924d57c8460850361eae43ebec2c446d84f"
+        }
+      ]
+    },
+    "6.4": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "e790e28b6fa9851945ffb9309c378829eedd03f6",
+          "version": "6.4.6",
+          "qt": "6.8.0"
+        },
+        "plasma-workspace": {
+          "commit": "67a26244b89a662e72fcde6df3cae0ecc862b792",
+          "version": "6.4.6",
+          "qt": "6.8.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/main.qml",
+          "blob": "abe9c3523dacd0d4c480cad664c57dfbd6c01ab6"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/Task.qml",
+          "blob": "2018c5647805f035d456c0a40e3ba306354263fa"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/code/layoutmetrics.js",
+          "blob": "895cc725d2cac9e8e94ad8f8340e11c83eea5db1"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/contents/ui/main.qml",
+          "blob": "68e0a60bdb5c2f3effe13ec3769415b98df6ec15"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "226778929501fc0995a7eea8dd70b972caaf351e"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "564e1f5361440207f7d1220a5b817d4cd6c884ae"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "0652bbe0d07a94351bacf1eb508cbbcac9c5ffc4"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/main.qml",
+          "blob": "001da8d9435eb1886c9e79e675095df9702154f7"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/items/AbstractItem.qml",
+          "blob": "ccb5c698c4a5a22e0c41923f3f6865727b9d0053"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/main.qml",
+          "blob": "9d19451a188acdb3d428a04487e265de0884e89d"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/package/contents/ui/global/Globals.qml",
+          "blob": "2a488e3597ae271ee8c68f14284103792efe3ba6"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/HiddenItemsView.qml",
+          "blob": "a29aa50baa9e0887f2632c96aaee09debbe44777"
+        }
+      ]
+    },
+    "6.5": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "af268e97f85d157fba5b543ca4cc8145f7401ad4",
+          "version": "6.5.6",
+          "qt": "6.9.0"
+        },
+        "plasma-workspace": {
+          "commit": "b71f8ee2c9b6b05d1d6236942e59b000419f6ae0",
+          "version": "6.5.6",
+          "qt": "6.9.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/main.qml",
+          "blob": "abe9c3523dacd0d4c480cad664c57dfbd6c01ab6"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/Task.qml",
+          "blob": "2018c5647805f035d456c0a40e3ba306354263fa"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/package/contents/ui/code/layoutmetrics.js",
+          "blob": "895cc725d2cac9e8e94ad8f8340e11c83eea5db1"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/main.qml",
+          "blob": "68e0a60bdb5c2f3effe13ec3769415b98df6ec15"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "45c2365582016bfbbc6a0a807021eae3affe1232"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "f9fdf67dfd8023128d67e4865c7d7436f24e3bf4"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "d6676a0de6db9d61dd0693eb52b4704c838515d9"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/main.qml",
+          "blob": "f46a840c2853ef4c8dde4473e5213bf5c9f9e6cb"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/items/AbstractItem.qml",
+          "blob": "ccb5c698c4a5a22e0c41923f3f6865727b9d0053"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/main.qml",
+          "blob": "e544d0d01c5392a54affa6533fbdde5b2700d6f0"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/global/Globals.qml",
+          "blob": "ee5421976ccde241a94b559595da18f0085e4a2f"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/package/contents/ui/HiddenItemsView.qml",
+          "blob": "a29aa50baa9e0887f2632c96aaee09debbe44777"
+        }
+      ]
+    },
+    "6.6": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "e675984dcbd6dd5629980d28e2c9c1d670f5a00e",
+          "version": "6.6.7",
+          "qt": "6.10.0"
+        },
+        "plasma-workspace": {
+          "commit": "78999364c18b14388c3a56ddd07cf239e92766f8",
+          "version": "6.6.7",
+          "qt": "6.10.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/main.qml",
+          "blob": "49d66a4b56514b8ee99fc6348b7da7b8bcddb175"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/Task.qml",
+          "blob": "61d279d6fd1c985ac6b1792ee0830b341c9477f0"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/code/LayoutMetrics.js",
+          "blob": "895cc725d2cac9e8e94ad8f8340e11c83eea5db1"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/main.qml",
+          "blob": "b1fb1a8860af64c3c60bfbfdbfebe35ac4948544"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "a2357474355c241e9557918243d9b2925c05e259"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "d09dfba6e3cca7fccf3f27a65ddc77c6936b17ca"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "54f44477eda6deb8b0ec929be5abb61d0dd52917"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/main.qml",
+          "blob": "c07bb4310b5501429eed181003cc319805787cba"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/AbstractItem.qml",
+          "blob": "16f4039d1d036736ece8e90e0d292618750a7f32"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/main.qml",
+          "blob": "015aa1cee004abedf0791846d6ca85c3df569185"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/global/Globals.qml",
+          "blob": "6f3ef58911fd1fba90f1973e82f177d4070a8845"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/HiddenItemsView.qml",
+          "blob": "a7e6f967fd15ff0fb7b4d1d5c9e6e79ae8a6de96"
+        }
+      ]
+    },
+    "6.7": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "66c0d628757b7d5ec35dc93f303b846719cd2f5a",
+          "version": "6.7.5",
+          "qt": "6.10.0"
+        },
+        "plasma-workspace": {
+          "commit": "1d71464924533f690304284b5028810839038a54",
+          "version": "6.7.5",
+          "qt": "6.10.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/main.qml",
+          "blob": "164bf2f1e62629d3528ae4db2ae4a20f2a7c350b"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/Task.qml",
+          "blob": "064b026262c76d2ac70d39eb8191e5bf4a448921"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/code/LayoutMetrics.js",
+          "blob": "ffac060bcbdf7da46ac8526428e6694a03a41c47"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/main.qml",
+          "blob": "1d46c2c5f09601c72e427920d20cdb0096bb6b5a"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "a2357474355c241e9557918243d9b2925c05e259"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "7e8184f16056d147458ce02ed6770a5a655d03ae"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "a13700995556afe478d15bc7faa02304b3fe0d8b"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/main.qml",
+          "blob": "13800393ccde2512029e51ca1dafad23a86c2ec4"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/AbstractItem.qml",
+          "blob": "16f4039d1d036736ece8e90e0d292618750a7f32"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/main.qml",
+          "blob": "6e8b485ae631fc0579db263dba8332453cc1885d"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/global/Globals.qml",
+          "blob": "7113073ffa01eab7c7c1bc85675358ac711ede71"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/HiddenItemsView.qml",
+          "blob": "a7e6f967fd15ff0fb7b4d1d5c9e6e79ae8a6de96"
+        }
+      ]
+    },
+    "6.8": {
+      "projects": {
+        "plasma-desktop": {
+          "commit": "0778a17aef1561b830b6c2eccd420300d88ede92",
+          "version": "6.8.1",
+          "qt": "6.11.0"
+        },
+        "plasma-workspace": {
+          "commit": "221bd1df03ac8a6e7bde9128a4402eb3f458f328",
+          "version": "6.8.1",
+          "qt": "6.11.0"
+        }
+      },
+      "files": [
+        {
+          "key": "taskmanager/main.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/main.qml",
+          "blob": "969460c38cf818863935aecff5d6caff9e6d98eb"
+        },
+        {
+          "key": "taskmanager/Task.qml",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/Task.qml",
+          "blob": "1902cdc11122285cab06a5c2949ea0656eeead6e"
+        },
+        {
+          "key": "taskmanager/code/layoutmetrics.js",
+          "project": "plasma-desktop",
+          "path": "applets/taskmanager/qml/code/LayoutMetrics.js",
+          "blob": "ffac060bcbdf7da46ac8526428e6694a03a41c47"
+        },
+        {
+          "key": "panel/main.qml",
+          "project": "plasma-desktop",
+          "path": "containments/panel/main.qml",
+          "blob": "15fc51a7d7240203c10496c201e3e72f98bf2f55"
+        },
+        {
+          "key": "desktopcontainment/FolderViewLayer.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderViewLayer.qml",
+          "blob": "02c7491b36e73060254e1f4c835ed5fa3e183436"
+        },
+        {
+          "key": "desktopcontainment/FolderView.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderView.qml",
+          "blob": "9e0560dd6f7766df1044416aaff545d06ce3df36"
+        },
+        {
+          "key": "desktopcontainment/FolderItemDelegate.qml",
+          "project": "plasma-desktop",
+          "path": "containments/desktop/package/contents/ui/FolderItemDelegate.qml",
+          "blob": "3ea54bc4afb3036c2b0c2f3a06688e69dc786f94"
+        },
+        {
+          "key": "systemtray/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/main.qml",
+          "blob": "8e56f1f0bcfad1c78ddac5a38f773e9045e5d1b7"
+        },
+        {
+          "key": "systemtray/items/AbstractItem.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/AbstractItem.qml",
+          "blob": "007e62cc6db343a9fc35701ef8f1ce8063873cf2"
+        },
+        {
+          "key": "notifications/main.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/main.qml",
+          "blob": "6e8b485ae631fc0579db263dba8332453cc1885d"
+        },
+        {
+          "key": "notifications/global/Globals.qml",
+          "project": "plasma-workspace",
+          "path": "applets/notifications/global/Globals.qml",
+          "blob": "7113073ffa01eab7c7c1bc85675358ac711ede71"
+        },
+        {
+          "key": "systemtray/HiddenItemsView.qml",
+          "project": "plasma-workspace",
+          "path": "applets/systemtray/qml/HiddenItemsView.qml",
+          "blob": "a7e6f967fd15ff0fb7b4d1d5c9e6e79ae8a6de96"
+        }
+      ]
+    }
+  }
+}

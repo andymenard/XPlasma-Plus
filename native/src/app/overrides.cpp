@@ -123,7 +123,27 @@ std::optional<QString> patched(const QString &file, const QString &source, QStri
         const QString unless = rule.value(QStringLiteral("unlessContains")).toString();
         if (!unless.isEmpty() && text.contains(unless))
             continue;
-        const QString find = rule.value(QStringLiteral("find")).toString();
+        QString find = rule.value(QStringLiteral("find")).toString();
+        QString replace = rule.value(QStringLiteral("replace")).toString();
+        // Explicit source variants keep the same XP behavior on older
+        // Plasma branches. Unknown layouts still fail instead of silently
+        // omitting a required visual or substituting the stock widget.
+        if (!text.contains(find)) {
+            int matches = 0;
+            for (const QJsonValue &alternative : rule.value(QStringLiteral("alternatives")).toArray()) {
+                const QJsonObject candidate = alternative.toObject();
+                const QString anchor = candidate.value(QStringLiteral("find")).toString();
+                if (!anchor.isEmpty() && text.contains(anchor)) {
+                    find = anchor;
+                    replace = candidate.value(QStringLiteral("replace")).toString();
+                    ++matches;
+                }
+            }
+            if (matches > 1) {
+                fail(error, QStringLiteral("ambiguous Plasma source variants for %1; not patching it").arg(file));
+                return std::nullopt;
+            }
+        }
         // (optional: for what only some Plasmas have -- skipped where it's not)
         if (rule.value(QStringLiteral("optional")).toBool() && !text.contains(find))
             continue;
@@ -132,7 +152,6 @@ std::optional<QString> patched(const QString &file, const QString &source, QStri
                             .arg(file, find.left(60).trimmed()));
             return std::nullopt;
         }
-        QString replace = rule.value(QStringLiteral("replace")).toString();
         // {{name}}: a snippet from overrides/name.qml.
         for (int at = int(replace.indexOf(QLatin1String("{{"))); at >= 0; at = int(replace.indexOf(QLatin1String("{{")))) {
             const int end = int(replace.indexOf(QLatin1String("}}"), at));
@@ -157,7 +176,7 @@ struct Widget
 
 const QList<Widget> kPanelWidgets{
     {QStringLiteral("org.kde.plasma.systemtray"), QStringLiteral("systemtray"),
-     {QStringLiteral("main.qml"), QStringLiteral("items/AbstractItem.qml")}, {},
+     {QStringLiteral("main.qml"), QStringLiteral("items/AbstractItem.qml"), QStringLiteral("HiddenItemsView.qml")}, {},
      {QStringLiteral("XpNotificationIcons.qml")}},
     {QStringLiteral("org.kde.plasma.taskmanager"), QStringLiteral("taskmanager"),
      {QStringLiteral("main.qml"), QStringLiteral("Task.qml"), QStringLiteral("code/layoutmetrics.js")}, {},
@@ -204,12 +223,18 @@ std::optional<QList<std::pair<QString, QString>>> prepareWidget(const QString &p
     }
     QList<std::pair<QString, QString>> files;
     for (const QString &f : w.files) {
-        auto text = patched(w.key + QLatin1Char('/') + f, readText(system + QLatin1String("/contents/ui/") + f), error);
+        // Plasma 6.0 calls the task sizing script layout.js; later versions
+        // split it into layoutmetrics.js. Patch the host's own file in place.
+        QString actual = f;
+        if (w.key == QLatin1String("taskmanager") && f == QLatin1String("code/layoutmetrics.js")
+            && !QFileInfo::exists(system + QLatin1String("/contents/ui/") + f))
+            actual = QStringLiteral("code/layout.js");
+        auto text = patched(w.key + QLatin1Char('/') + f, readText(system + QLatin1String("/contents/ui/") + actual), error);
         if (!text)
             return std::nullopt;
         for (auto it = w.values.cbegin(); it != w.values.cend(); ++it)
             text->replace(QLatin1Char('@') + it.key() + QLatin1Char('@'), it.value());
-        files.append({f, *text});
+        files.append({actual, *text});
     }
     return files;
 }

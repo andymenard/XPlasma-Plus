@@ -24,7 +24,7 @@ class Upgrade(unittest.TestCase):
   for target,value in {'HOME':str(self.home)}.items():
    patcher=patch.dict(os.environ,{target:value});patcher.start();self.addCleanup(patcher.stop)
   stubs={'BASE':self.bundle,'preflight':lambda selected,installed=():None,'verify':lambda:None,'root':self.root,
-         'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':None},'desktop_path':lambda home:home/'Desktop',
+         'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':None,'plasma':(6,6,4),'qt':(6,10,2),'systemd':True},'desktop_path':lambda home:home/'Desktop',
          'prepare_native':self.native,'basic':self.basic,'verify_taskbar':lambda:None,'desktop_updates':lambda *a,**k:None,
          'taskbar_defaults':lambda home,selected:self.calls.append('taskbar_defaults')}
   for name,value in stubs.items():
@@ -165,7 +165,7 @@ class SystemScreens(unittest.TestCase):
   login=[str(self.config),str(self.theme),str(self.system/'icons'),str(self.system/'status'),str(self.system/'status.desktop'),str(self.system/'tmpfiles.conf')]
   self.theme.mkdir(parents=True);(self.theme/'Main.qml').write_text('stock')
   for name,value in {'PATHS':{'login':login,'boot':[]},'LOGIN_STATUS':[('xp-logon-status',login[3],0o755),('xp-logon-status.desktop',login[4],0o644),('xp-logonui.conf',login[5],0o644)],
-                     'run':lambda args:None,'greeter_environment':lambda:'QML_XHR_ALLOW_FILE_READ=1','detect':lambda:{'family':None}}.items():
+                     'run':lambda args:None,'greeter_environment':lambda:'QML_XHR_ALLOW_FILE_READ=1','detect':lambda:{'family':None,'plasma':(6,6,4),'qt':(6,10,2),'systemd':True}}.items():
    patcher=patch.object(r,name,value);patcher.start();self.addCleanup(patcher.stop)
   # (No SELinux relabelling of test paths.)
   patcher=patch.object(r.shutil,'which',lambda name:None);patcher.start();self.addCleanup(patcher.stop)

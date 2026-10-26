@@ -9,7 +9,9 @@
     }
     function xpRefreshFilters() {
         if (activeModel) activeModel.invalidateFilter();
-        if (hiddenModel) hiddenModel.invalidateFilter();
+        // Before Plasma 6.2 the hidden model lives in ExpandedRepresentation.
+        const hidden = typeof hiddenModel !== "undefined" ? hiddenModel : (root.hiddenLayout ? root.hiddenLayout.model : null);
+        if (hidden && hidden.invalidateFilter) hidden.invalidateFilter();
         if (xpExpandableModel) xpExpandableModel.invalidateFilter();
         xpCountExpandable();
     }

@@ -1803,8 +1803,8 @@ private Q_SLOTS:
             QCOMPARE(iconQml.count("XPlasma: XP blends a selected desktop icon"), 1);
             QVERIFY(iconQml.contains("width: label.contentWidth + 4"));
             QVERIFY(iconQml.contains("opacity: 0.5"));
-            QVERIFY(iconQml.contains("visible: !main.isOnRootView"));
-            QVERIFY(iconQml.contains("visible: main.isOnRootView && !!(main.selected || (main.model && main.model.selected))"));
+            QVERIFY(iconQml.contains("visible: !main.xpOnDesktop"));
+            QVERIFY(iconQml.contains("visible: main.xpOnDesktop && main.xpSelected"));
 
             QVERIFY(qml.contains("color: \"transparent\""));
         }
@@ -1860,10 +1860,7 @@ private Q_SLOTS:
     {
         // Applying on a Plasma that can't take every override changes
         // nothing at all: no programs run, no settings written.
-        if (m_realThemes.isEmpty())
-            QSKIP("no asset library on this machine");
-        const auto look = Look::fromStyle(m_realThemes + QLatin1String("/Luna/luna.msstyles"));
-        QVERIFY(look);
+        const Look look = Look::fromScheme(ClassicScheme());
         const QString system = m_home.filePath(QStringLiteral("empty-share"));
         QDir().mkpath(system);
         const QByteArray saved = qgetenv("XDG_DATA_DIRS");
@@ -1871,7 +1868,7 @@ private Q_SLOTS:
         RecordingSession session;
         ApplyOptions o;
         QString error;
-        const bool applied = applyLook(session, *look, o, &error);
+        const bool applied = applyLook(session, look, o, &error);
         qputenv("XDG_DATA_DIRS", saved);
         QVERIFY(!applied);
         QVERIFY2(error.contains(QLatin1String("nothing was changed")), qPrintable(error));
@@ -1883,6 +1880,27 @@ private Q_SLOTS:
             QVERIFY2(run.contains(QStringLiteral("plasmashell")) && run.contains(QStringLiteral("--version")), qPrintable(run.join(QLatin1Char(' '))));
         QVERIFY(session.config.isEmpty());
         QVERIFY(session.scripts.isEmpty());
+    }
+
+    void strictPatchVariants()
+    {
+        const QJsonArray rules{QJsonObject{
+            {"find", "modern-layout"}, {"replace", "xp-layout"},
+            {"alternatives", QJsonArray{
+                QJsonObject{{"find", "legacy-a"}, {"replace", "xp-layout"}},
+                QJsonObject{{"find", "legacy-b"}, {"replace", "xp-layout"}}
+            }}
+        }};
+        QString error;
+        for (const QString &source : {QStringLiteral("modern-layout"), QStringLiteral("legacy-a"), QStringLiteral("legacy-b")}) {
+            const auto result = overrides::patched(QStringLiteral("test.qml"), source, &error, &rules);
+            QVERIFY2(result, qPrintable(error));
+            QCOMPARE(*result, QStringLiteral("xp-layout"));
+        }
+        QVERIFY(!overrides::patched(QStringLiteral("test.qml"), QStringLiteral("unknown-layout"), &error, &rules));
+        QVERIFY(!overrides::patched(QStringLiteral("test.qml"), QStringLiteral("modern-layout modern-layout"), &error, &rules));
+        QVERIFY(!overrides::patched(QStringLiteral("test.qml"), QStringLiteral("legacy-a legacy-b"), &error, &rules));
+        QVERIFY(error.contains(QStringLiteral("ambiguous")));
     }
 
     void retiredLiveColorsOnlyDisableConfiguration()
@@ -2404,7 +2422,7 @@ private Q_SLOTS:
     void colorOnlyApplyPreservesRuntimeAndCaches()
     {
         const QString source=m_realThemes+"/Luna/luna.msstyles";
-        if(!QFileInfo::exists(source))QSKIP("needs Luna");
+        if(!QFileInfo::exists(source) || m_realIso.isEmpty())QSKIP("needs Luna and XP media for the XP Start menu");
         QString error;const auto base=Look::fromStyle(source,"NORMALBLUE_INI",&error);QVERIFY(base);
         State state;state.media=m_realIso;state.appliedKind="style";state.style=source;state.variant=base->variant;state.settings.insert(kAppliedWithKey,project::kVersion);QVERIFY(state.save());
         const QString share=paths::localShare();

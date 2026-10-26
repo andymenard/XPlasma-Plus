@@ -1,4 +1,118 @@
 {
+ "6.5": {
+  "image": "xplasma-plasma:6.5",
+  "qtFloor": "6.10",
+  "sources": {
+   "plasma-workspace": {
+    "version": "6.5.5",
+    "sha256": "29b0763bbbdd9e27416dce1fd939242d2588feef36c4cbae941c31964d531fd4"
+   },
+   "plasma-desktop": {
+    "version": "6.5.5",
+    "sha256": "2367f12531575b2e445cd2b0fa0b756f151f10eaa27358b0966735ff400146c7"
+   }
+  },
+  "widgets": [
+   {
+    "id": "org.kde.plasma.notifications",
+    "project": "plasma-workspace",
+    "dir": "applets/notifications",
+    "files": {
+     "notifications/main.qml": "main.qml",
+     "notifications/global/Globals.qml": "global/Globals.qml"
+    },
+    "extras": {
+     "XpPopup.qml": "XpPopup.qml",
+     "XpBalloon.qml": "XpBalloon.qml",
+     "XpCopyDialog.qml": "XpCopyDialog.qml",
+     "XpButton.qml": "XpButton.qml"
+    },
+    "register": {
+     "": [
+      "XpPopup.qml",
+      "XpBalloon.qml",
+      "XpCopyDialog.qml",
+      "XpButton.qml"
+     ]
+    }
+   },
+   {
+    "id": "org.kde.panel",
+    "project": "plasma-desktop",
+    "dir": "containments/panel",
+    "files": {
+     "panel/main.qml": "main.qml"
+    }
+   }
+  ],
+  "rules": {
+   "notifications/global/Globals.qml": [
+    {
+     "find": "import org.kde.kirigami 2.11 as Kirigami\n",
+     "replace": "import org.kde.kirigami 2.11 as Kirigami\nimport org.kde.ksvg as KSvg\n"
+    },
+    {
+     "find": "    id: globals\n",
+     "replace": "    id: globals\n{{xp-globals}}\n"
+    },
+    {
+     "find": "    function positionPopups() {\n",
+     "replace": "    function positionPopups() {\n        if (globals.xpBalloons) {\n            return;\n        }\n"
+    },
+    {
+     "find": "        delegate: NotificationPopup {\n",
+     "replace": "        delegate: globals.xpBalloons ? xpDelegate : stockDelegate\n        property Component xpDelegate: Component {\n        {{xp-delegate}}\n        }\n        property Component stockDelegate: Component {\n        NotificationPopup {\n"
+    },
+    {
+     "find": "        }\n        onObjectAdded: (index, object) => {\n            positionPopups();\n",
+     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof popupNotificationsModel.playSoundHint === \"function\")\n                    popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            positionPopups();\n",
+     "alternatives": [
+      {
+       "find": "        }\n        onObjectAdded: (index, object) => {\n            globals.positionPopups();\n",
+       "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof popupNotificationsModel.playSoundHint === \"function\")\n                    popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+      }
+     ]
+    },
+    {
+     "find": "        const containment = plasmoid.containment;\n",
+     "replace": "        const containment = plasmoid.containment;\n        if (!containment) return Qt.rect(0, 0, -1, -1);\n",
+     "optional": true
+    },
+    {
+     "find": "        globals.plasmoid = globals.plasmoidItem.plasmoid;",
+     "replace": "        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;",
+     "optional": true
+    }
+   ],
+   "notifications/main.qml": [
+    {
+     "find": "    id: root\n",
+     "replace": "    id: root\n\n    // XPlasma: the balloons' queue, for the system tray to draw.\n    readonly property var xpQueue: Notifications.Globals.xpBalloons ? Notifications.Globals.xpQueue : []\n    readonly property int xpCurrentId: Notifications.Globals.xpCurrentId\n    function xpRegisterIcon(id, item) { Notifications.Globals.xpRegisterIcon(id, item); }\n    function xpUnregisterIcon(id, item) { Notifications.Globals.xpUnregisterIcon(id, item); }\n    function xpIconClicked(id) { Notifications.Globals.xpRecall(id); }\n"
+    },
+    {
+     "find": "    readonly property int effectiveStatus: historyModel.activeJobsCount > 0\n",
+     "replace": "    // XPlasma: with XP's balloons, no icon of its own but Do Not Disturb's -- XP's\n    // tray had none; the balloons' icons and the copy dialog show the rest.\n    readonly property int effectiveStatus: Notifications.Globals.xpBalloons\n                     ? (Notifications.Globals.inhibited ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus)\n                     : historyModel.activeJobsCount > 0\n"
+    }
+   ],
+   "extra/XpPopup.qml": [
+    {
+     "find": "import \"global\"\n",
+     "replace": "import plasma.applet.org.kde.plasma.notifications\n"
+    }
+   ],
+   "extra/XpBalloon.qml": [
+    {
+     "find": "import org.kde.plasma.private.notifications as NotificationsApplet\n",
+     "replace": "import plasma.applet.org.kde.plasma.notifications as NotificationsApplet\n"
+    },
+    {
+     "find": "import \"global\"\n",
+     "replace": "import plasma.applet.org.kde.plasma.notifications\n"
+    }
+   ]
+  },
+  "sourceQtFloor": "6.9"
+ },
  "6.6": {
   "image": "xplasma-plasma:6.6",
   "qtFloor": "6.10",
@@ -119,7 +233,17 @@
     },
     {
      "find": "        }\n        onObjectAdded: (index, object) => {\n            globals.positionPopups();\n",
-     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                globals.popupNotificationsModel.playSoundHint(globals.popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof globals.popupNotificationsModel.playSoundHint === \"function\")\n                    globals.popupNotificationsModel.playSoundHint(globals.popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+    },
+    {
+     "find": "        const containment = plasmoid.containment;\n",
+     "replace": "        const containment = plasmoid.containment;\n        if (!containment) return Qt.rect(0, 0, -1, -1);\n",
+     "optional": true
+    },
+    {
+     "find": "        globals.plasmoid = globals.plasmoidItem.plasmoid;",
+     "replace": "        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;",
+     "optional": true
     }
    ],
    "notifications/main.qml": [
@@ -300,7 +424,17 @@
     },
     {
      "find": "        }\n        onObjectAdded: (index, object) => {\n            globals.positionPopups();\n",
-     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                globals.popupNotificationsModel.playSoundHint(globals.popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof globals.popupNotificationsModel.playSoundHint === \"function\")\n                    globals.popupNotificationsModel.playSoundHint(globals.popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+    },
+    {
+     "find": "        const containment = plasmoid.containment;\n",
+     "replace": "        const containment = plasmoid.containment;\n        if (!containment) return Qt.rect(0, 0, -1, -1);\n",
+     "optional": true
+    },
+    {
+     "find": "        globals.plasmoid = globals.plasmoidItem.plasmoid;",
+     "replace": "        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;",
+     "optional": true
     }
    ],
    "notifications/main.qml": [
@@ -311,6 +445,10 @@
     {
      "find": "    readonly property int effectiveStatus: historyModel.activeJobsCount > 0\n",
      "replace": "    // XPlasma: with XP's balloons, no icon of its own but Do Not Disturb's -- XP's\n    // tray had none; the balloons' icons and the copy dialog show the rest.\n    readonly property int effectiveStatus: Notifications.Globals.xpBalloons\n                     ? (Notifications.Globals.inhibited ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus)\n                     : historyModel.activeJobsCount > 0\n"
+    },
+    {
+     "find": "    fullRepresentation: FullRepresentation {\n",
+     "replace": "    fullRepresentation: FullRepresentation {\n        id: xpNotificationHistory\n        // Plasma derives heading insets from popup padding, which in turn\n        // depends on the heading width. XP's flat history header needs no\n        // horizontal overhang; break that geometry feedback while XP is active.\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"leftInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"rightInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n"
     }
    ],
    "extra/XpPopup.qml": [
@@ -359,19 +497,20 @@
      "replace": "        id: label\n{{crisp-label}}"
     }
    ]
-  }
+  },
+  "sourceQtFloor": "6.10"
  },
  "6.8": {
   "image": "xplasma-plasma:6.8",
-  "qtFloor": "6.12",
+  "qtFloor": "6.11",
   "sources": {
    "plasma-workspace": {
-    "version": "6.7.91",
-    "sha256": "9955233756c0485b98bf0623cff2d93c308e0e0539dd8e1d560ec06548e44ed1"
+    "version": "6.8.1",
+    "sha256": "e2abb7e5b5fc8d59fe369d3ab4ea776e10684af0fb1a8a3275e9df64eff97d20"
    },
    "plasma-desktop": {
-    "version": "6.7.91",
-    "sha256": "ef7bbbca9e107496d45cb6be6a0337ec65f2bd4bc5c1e1d25815e02843a4b33a"
+    "version": "6.8.1",
+    "sha256": "12d2b8e44626f59b9602ee15b2bd847033866e4a414b9f4d8819994b35d8f66f"
    }
   },
   "widgets": [
@@ -481,7 +620,17 @@
     },
     {
      "find": "        }\n        onObjectAdded: (index, object) => {\n            globals.positionPopups();\n",
-     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                globals.popupNotificationsModel.playSoundHint(globals.popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof globals.popupNotificationsModel.playSoundHint === \"function\")\n                    globals.popupNotificationsModel.playSoundHint(globals.popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+    },
+    {
+     "find": "        const containment = plasmoid.containment;\n",
+     "replace": "        const containment = plasmoid.containment;\n        if (!containment) return Qt.rect(0, 0, -1, -1);\n",
+     "optional": true
+    },
+    {
+     "find": "        globals.plasmoid = globals.plasmoidItem.plasmoid;",
+     "replace": "        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;",
+     "optional": true
     }
    ],
    "notifications/main.qml": [
@@ -492,6 +641,10 @@
     {
      "find": "    readonly property int effectiveStatus: historyModel.activeJobsCount > 0\n",
      "replace": "    // XPlasma: with XP's balloons, no icon of its own but Do Not Disturb's -- XP's\n    // tray had none; the balloons' icons and the copy dialog show the rest.\n    readonly property int effectiveStatus: Notifications.Globals.xpBalloons\n                     ? (Notifications.Globals.inhibited ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus)\n                     : historyModel.activeJobsCount > 0\n"
+    },
+    {
+     "find": "    fullRepresentation: FullRepresentation {\n",
+     "replace": "    fullRepresentation: FullRepresentation {\n        id: xpNotificationHistory\n        // Plasma derives heading insets from popup padding, which in turn\n        // depends on the heading width. XP's flat history header needs no\n        // horizontal overhang; break that geometry feedback while XP is active.\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"leftInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"rightInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n"
     }
    ],
    "extra/XpPopup.qml": [

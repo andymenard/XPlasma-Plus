@@ -388,8 +388,10 @@ void Decoration::paintCaption(QPainter *painter, bool active)
     painter->setFont(look.captionFont());
     const QString text = QFontMetricsF(look.captionFont()).elidedText(title, Qt::ElideRight, m_label.width());
     const int flags = Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine;
+    const QColor textColor = look.system().colour(active ? u"TitleText" : u"InactiveTitleText");
+    const qreal luminance = 0.2126 * textColor.redF() + 0.7152 * textColor.greenF() + 0.0722 * textColor.blueF();
     // The caption part's shadow under the text, where the style has one.
-    if (look.captionProperty(active, u"textshadowtype").value_or(QString()).compare(QLatin1String("single"), Qt::CaseInsensitive) == 0) {
+    if (luminance > 0.5 && look.captionProperty(active, u"textshadowtype").value_or(QString()).compare(QLatin1String("single"), Qt::CaseInsensitive) == 0) {
         QPointF offset(1, 1);
         const QStringList xy = look.captionProperty(active, u"textshadowoffset").value_or(QString()).split(QLatin1Char(','));
         if (xy.size() == 2)
@@ -399,7 +401,7 @@ void Decoration::paintCaption(QPainter *painter, bool active)
         painter->setPen(QColor(shadow));
         painter->drawText(m_label.translated(offset), flags, text);
     }
-    painter->setPen(look.system().colour(active ? u"TitleText" : u"InactiveTitleText"));
+    painter->setPen(textColor);
     painter->drawText(m_label, flags, text);
     painter->restore();
 }

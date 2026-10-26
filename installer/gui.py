@@ -31,7 +31,7 @@ class SetupStep(QtWidgets.QLabel):
   painter.setPen(QtGui.QColor('#f1f5ff'));painter.setBrush(gradient);painter.drawEllipse(QtCore.QRectF(2,y+2,14,14))
 class Installer(QtWidgets.QMainWindow):
  def __init__(self,test_mode=False):
-  super().__init__();self.test_mode=test_mode;self.process=None;self.buffer='';self.current_action=None;self.upgrading=False
+  super().__init__();self.test_mode=test_mode;self.process=None;self.buffer='';self.current_action=None;self.upgrading=False;self.report_lines=[]
   self.setWindowTitle('XPlasma Plus Setup');self.resize(1024,768)
   self._tip_index=0
   self.setWindowIcon(QtGui.QIcon(str(BASE/'payload/assets/desktop-icons/computer.png')))
@@ -215,6 +215,7 @@ class Installer(QtWidgets.QMainWindow):
    if self.hidpi_icons.isChecked():args+=['--hidpi-icons']
    if self.hires_wallpapers.isChecked():args+=['--hires-wallpapers']
   self.upgrading=action=='install' and (STATE/'installation.json').exists()
+  self.report_lines=[];self.buffer='';self.attempted_features=self.selected()
   self.set_step(1);self.pages.setCurrentIndex(1);self.tip_timer.start();self.dots.start();self.current_action=action;self.terminal_log.clear();self.progress.setRange(0,0);self.tree.setEnabled(False);self.theme.setEnabled(False);self.close_button.setEnabled(False)
   self.process=QtCore.QProcess(self);self.process.setProcessChannelMode(QtCore.QProcess.ProcessChannelMode.MergedChannels)
   self.process.readyReadStandardOutput.connect(self.read_output);self.process.finished.connect(self.finished)
@@ -235,7 +236,33 @@ class Installer(QtWidgets.QMainWindow):
   box.setCheckBox(QtWidgets.QCheckBox('Also delete the settings backups (they can\'t be restored again afterwards)',box))
   return box
  def append_log(self,text):
+  self.report_lines.append(text)
   self.terminal_log.appendPlainText(text)
+ def failure_report(self,code):
+  profile={key:self.profile.get(key) for key in ['name','family','arch','plasma','qt','systemd','kde','boot']}
+  output='\n'.join(self.report_lines).replace(str(Path.home()),'~')
+  # Indentation keeps arbitrary tool output from closing the Markdown block.
+  return '### XPlasma Plus failure report\n\nVersion: '+EDITION.get('version','unknown')+'\nAction: '+str(self.current_action)+'\nExit code: '+str(code)+'\nFeatures: '+', '.join(getattr(self,'attempted_features',[]))+'\n\nSystem:\n\n    '+json.dumps(profile,sort_keys=True)+'\n\nInstaller output (including recovery):\n\n'+'\n'.join('    '+line for line in output.splitlines())+'\n'
+ def show_failure_report(self,code):
+  report=self.failure_report(code);saved=''
+  try:
+   folder=Path.home()/'.local/state/xplasma-plus';folder.mkdir(parents=True,exist_ok=True)
+   path=folder/'last-failure.log'
+   # Replace atomically; never follow an existing report-file symlink.
+   import tempfile
+   with tempfile.NamedTemporaryFile(mode='w',dir=folder,delete=False) as file:
+    file.write(report);temporary=Path(file.name)
+   temporary.replace(path);saved=' A copy is saved in '+str(path)+'.'
+  except OSError:pass
+  dialog=QtWidgets.QDialog(self);dialog.setWindowTitle('XPlasma Plus operation failed');dialog.resize(780,540)
+  layout=QtWidgets.QVBoxLayout(dialog)
+  instructions=QtWidgets.QLabel('Setup did not complete. Review the report below, click Copy report, then paste it into a new or existing issue at <a href="https://github.com/andymenard/XPlasma-Plus/issues">github.com/andymenard/XPlasma-Plus/issues</a>.'+saved)
+  instructions.setWordWrap(True);instructions.setOpenExternalLinks(True);layout.addWidget(instructions)
+  text=QtWidgets.QPlainTextEdit();text.setObjectName('failureReport');text.setReadOnly(True);text.setPlainText(report);layout.addWidget(text)
+  buttons=QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Close)
+  copy=buttons.addButton('Copy report',QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+  copy.clicked.connect(lambda:QtWidgets.QApplication.clipboard().setText(report))
+  buttons.rejected.connect(dialog.reject);layout.addWidget(buttons);dialog.exec()
  def read_output(self):
   self.buffer+=bytes(self.process.readAllStandardOutput()).decode(errors='replace').replace('\r','\n')
   while '\n' in self.buffer:
@@ -261,9 +288,10 @@ class Installer(QtWidgets.QMainWindow):
    self.status.setText(message);QtWidgets.QMessageBox.information(self,'Complete',message)
   else:
    self.status.setText('The operation failed. See the installation output for the error and recovery result.')
-   QtWidgets.QMessageBox.warning(self,'Installation did not complete','The operation failed. Read the installation output on the left for the error and any recovery steps. No reboot was performed.')
+   self.show_failure_report(code)
  def process_error(self,error):
-  if error==QtCore.QProcess.ProcessError.FailedToStart:self.finished(1,None)
+  if error==QtCore.QProcess.ProcessError.FailedToStart:
+   self.append_log('Could not start installer: '+self.process.errorString());self.finished(1,None)
  def closeEvent(self,event):
   if self.process is not None:
    QtWidgets.QMessageBox.information(self,'Installation running','Please wait for the current installation or recovery to finish.');event.ignore()

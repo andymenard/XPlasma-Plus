@@ -25,7 +25,11 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-find_package(Qt${QT_MAJOR} REQUIRED COMPONENTS Core Gui Widgets)
+if(QT_MAJOR EQUAL 6)
+  find_package(Qt6 6.6 REQUIRED COMPONENTS Core Gui Widgets)
+else()
+  find_package(Qt${QT_MAJOR} REQUIRED COMPONENTS Core Gui Widgets)
+endif()
 set(QT Qt${QT_MAJOR})
 
 # The app (Qt 6 only) and the archive libraries it links: third-party code

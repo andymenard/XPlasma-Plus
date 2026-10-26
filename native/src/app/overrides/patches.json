@@ -13,7 +13,13 @@
   {
    "find": "import QtQuick\n",
    "replace": "import QtQuick\nimport org.kde.ksvg as KSvg\n",
-   "unlessContains": "import org.kde.ksvg as KSvg"
+   "unlessContains": "import org.kde.ksvg as KSvg",
+   "alternatives": [
+    {
+     "find": "import org.kde.ksvg 1.0 as KSvg\n",
+     "replace": "import org.kde.ksvg 1.0 as KSvg\n"
+    }
+   ]
   },
   {
    "find": "    id: root\n",
@@ -25,7 +31,13 @@
   },
   {
    "find": "        id: activeModel\n",
-   "replace": "        id: activeModel\n        sortRoleName: \"effectiveStatus\"\n        sortOrder: Qt.AscendingOrder\n        sortColumn: root.xpTrayAvailable && !root.vertical ? 0 : -1\n"
+   "replace": "        id: activeModel\n        sortRoleName: \"effectiveStatus\"\n        sortOrder: Qt.AscendingOrder\n        sortColumn: root.xpTrayAvailable && !root.vertical ? 0 : -1\n",
+   "alternatives": [
+    {
+     "find": "                model: KItemModels.KSortFilterProxyModel {\n                    sourceModel: Plasmoid.systemTrayModel\n",
+     "replace": "                model: KItemModels.KSortFilterProxyModel {\n                    id: activeModel\n                    sortRoleName: \"effectiveStatus\"\n                    sortOrder: Qt.AscendingOrder\n                    sortColumn: root.xpTrayAvailable && !root.vertical ? 0 : -1\n                    sourceModel: Plasmoid.systemTrayModel\n"
+    }
+   ]
   },
   {
    "find": "return value === PlasmaCore.Types.ActiveStatus;",
@@ -33,7 +45,8 @@
   },
   {
    "find": "return value === PlasmaCore.Types.PassiveStatus\n",
-   "replace": "return value === PlasmaCore.Types.PassiveStatus\n                && !root.xpRevealHidden(sourceModel.data(sourceModel.index(sourceRow, 0, sourceParent), Qt.UserRole + 2));\n"
+   "replace": "return value === PlasmaCore.Types.PassiveStatus\n                && !root.xpRevealHidden(sourceModel.data(sourceModel.index(sourceRow, 0, sourceParent), Qt.UserRole + 2));\n",
+   "optional": true
   },
   {
    "find": "                id: tasksGrid\n",
@@ -68,7 +81,13 @@
  "systemtray/items/AbstractItem.qml": [
   {
    "find": "import QtQuick\n",
-   "replace": "import QtQuick\nimport QtQuick.Effects\n"
+   "replace": "import QtQuick\nimport QtQuick.Effects\n",
+   "alternatives": [
+    {
+     "find": "import QtQuick 2.2\n",
+     "replace": "import QtQuick\nimport QtQuick.Effects\n"
+    }
+   ]
   },
   {
    "find": "            id: iconContainer\n",
@@ -82,7 +101,13 @@
  "taskmanager/main.qml": [
   {
    "find": "    readonly property bool shouldShrinkToZero: tasksModel.count === 0\n",
-   "replace": "    // XPlasma: an XP taskbar's panel theme marks its task buttons, laid out\n    // as XP's TaskBand lays them out.\n    KSvg.Svg { id: xpTasksSvg; imagePath: \"widgets/tasks\" }\n    readonly property bool xpTaskband: xpTasksSvg.hasElement(\"hint-xplasma-taskband\") && !vertical\n    // ...and every XPlasma taskbar its colours: the theme's Complementary\n    // set (its Window set is XP's dialog colours, for Plasma's popups).\n    readonly property bool xpColours: xpTasksSvg.hasElement(\"hint-xplasma-colours\")\n    Kirigami.Theme.colorSet: xpColours ? Kirigami.Theme.Complementary : Kirigami.Theme.Window\n    Kirigami.Theme.inherit: !xpColours\n    // ...and crisp XP text, when it's on, for its task buttons' labels (Task.qml).\n    XpTextStyle { id: xpPixelTextStyle }\n    readonly property var xpTextStyle: xpPixelTextStyle\n    readonly property bool shouldShrinkToZero: tasksModel.count === 0\n"
+   "replace": "    // XPlasma: an XP taskbar's panel theme marks its task buttons, laid out\n    // as XP's TaskBand lays them out.\n    KSvg.Svg { id: xpTasksSvg; imagePath: \"widgets/tasks\" }\n    readonly property bool xpTaskband: xpTasksSvg.hasElement(\"hint-xplasma-taskband\") && !vertical\n    // ...and every XPlasma taskbar its colours: the theme's Complementary\n    // set (its Window set is XP's dialog colours, for Plasma's popups).\n    readonly property bool xpColours: xpTasksSvg.hasElement(\"hint-xplasma-colours\")\n    Kirigami.Theme.colorSet: xpColours ? Kirigami.Theme.Complementary : Kirigami.Theme.Window\n    Kirigami.Theme.inherit: !xpColours\n    // ...and crisp XP text, when it's on, for its task buttons' labels (Task.qml).\n    XpTextStyle { id: xpPixelTextStyle }\n    readonly property var xpTextStyle: xpPixelTextStyle\n    readonly property bool shouldShrinkToZero: tasksModel.count === 0\n",
+   "alternatives": [
+    {
+     "find": "    readonly property bool shouldShirnkToZero: !LayoutManager.logicalTaskCount()\n",
+     "replace": "    // XPlasma: an XP taskbar's panel theme marks its task buttons, laid out\n    // as XP's TaskBand lays them out.\n    KSvg.Svg { id: xpTasksSvg; imagePath: \"widgets/tasks\" }\n    readonly property bool xpTaskband: xpTasksSvg.hasElement(\"hint-xplasma-taskband\") && !vertical\n    // ...and every XPlasma taskbar its colours: the theme's Complementary\n    // set (its Window set is XP's dialog colours, for Plasma's popups).\n    readonly property bool xpColours: xpTasksSvg.hasElement(\"hint-xplasma-colours\")\n    Kirigami.Theme.colorSet: xpColours ? Kirigami.Theme.Complementary : Kirigami.Theme.Window\n    Kirigami.Theme.inherit: !xpColours\n    // ...and crisp XP text, when it's on, for its task buttons' labels (Task.qml).\n    XpTextStyle { id: xpPixelTextStyle }\n    readonly property var xpTextStyle: xpPixelTextStyle\n    readonly property bool shouldShirnkToZero: !LayoutManager.logicalTaskCount()\n"
+    }
+   ]
   },
   {
    "find": "        ToolTipDelegate {\n            id: openWindowToolTipDelegate\n",
@@ -103,28 +128,73 @@
  ],
  "taskmanager/Task.qml": [
   {
+   "find": "    id: task\n",
+   "replace": "    id: task\n    readonly property var xpTaskbandRoot: typeof tasksRoot !== \"undefined\" ? tasksRoot : tasks\n",
+   "unlessContains": "readonly property var xpTaskbandRoot:"
+  },
+  {
    "find": "            rightMargin: ((inPopup || tasksRoot.vertical) && taskList.columns > 1) ? LayoutMetrics.iconMargin : 0\n        }\n\n        imagePath: \"widgets/tasks\"",
-   "replace": "            rightMargin: tasksRoot.xpTaskband && !inPopup ? 2 : ((inPopup || tasksRoot.vertical) && taskList.columns > 1) ? LayoutMetrics.iconMargin : 0   // XPlasma: XP's 2px between buttons\n        }\n\n        imagePath: \"widgets/tasks\""
+   "replace": "            rightMargin: task.xpTaskbandRoot.xpTaskband && !inPopup ? 2 : ((inPopup || tasksRoot.vertical) && taskList.columns > 1) ? LayoutMetrics.iconMargin : 0   // XPlasma: XP's 2px between buttons\n        }\n\n        imagePath: \"widgets/tasks\"",
+   "alternatives": [
+    {
+     "find": "            rightMargin: ((inPopup || tasks.vertical) && taskList.columns > 1) ? LayoutManager.iconMargin : 0\n        }\n\n        imagePath: \"widgets/tasks\"",
+     "replace": "            rightMargin: task.xpTaskbandRoot.xpTaskband && !inPopup ? 2 : ((inPopup || tasks.vertical) && taskList.columns > 1) ? LayoutManager.iconMargin : 0   // XPlasma: XP's 2px between buttons\n        }\n\n        imagePath: \"widgets/tasks\""
+    }
+   ]
   },
   {
    "find": "            leftMargin: adjustMargin(true, parent.width, taskFrame.margins.left)\n            top: parent.top\n            topMargin: adjustMargin(false, parent.height, taskFrame.margins.top)\n        }\n\n        width: task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium) : Math.min(task.parent?.minimumWidth ?? 0, task.height)\n        height: task.inPopup ? width : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)\n                 - adjustMargin(false, parent.height, taskFrame.margins.bottom))",
-   "replace": "            // XPlasma: XP's 16px icon, 10px in, centred.\n            leftMargin: tasksRoot.xpTaskband && !task.inPopup ? 10 : adjustMargin(true, parent.width, taskFrame.margins.left)\n            top: parent.top\n            topMargin: tasksRoot.xpTaskband && !task.inPopup ? Math.round((parent.height - 16) / 2) : adjustMargin(false, parent.height, taskFrame.margins.top)\n        }\n\n        width: tasksRoot.xpTaskband && !task.inPopup ? 16 : task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium) : Math.min(task.parent?.minimumWidth ?? 0, task.height)\n        height: tasksRoot.xpTaskband && !task.inPopup ? 16 : task.inPopup ? width : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)\n                 - adjustMargin(false, parent.height, taskFrame.margins.bottom))"
+   "replace": "            // XPlasma: XP's 16px icon, 10px in, centred.\n            leftMargin: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 10 : adjustMargin(true, parent.width, taskFrame.margins.left)\n            top: parent.top\n            topMargin: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? Math.round((parent.height - 16) / 2) : adjustMargin(false, parent.height, taskFrame.margins.top)\n        }\n\n        width: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 16 : task.inPopup ? Math.max(Kirigami.Units.iconSizes.sizeForLabels, Kirigami.Units.iconSizes.medium) : Math.min(task.parent?.minimumWidth ?? 0, task.height)\n        height: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 16 : task.inPopup ? width : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)\n                 - adjustMargin(false, parent.height, taskFrame.margins.bottom))",
+   "alternatives": [
+    {
+     "find": "            leftMargin: adjustMargin(true, parent.width, taskFrame.margins.left)\n            top: parent.top\n            topMargin: adjustMargin(false, parent.height, taskFrame.margins.top)\n        }\n\n        width: height\n        height: (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)\n            - adjustMargin(false, parent.height, taskFrame.margins.bottom))",
+     "replace": "            leftMargin: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 10 : adjustMargin(true, parent.width, taskFrame.margins.left)\n            top: parent.top\n            topMargin: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? Math.round((parent.height - 16) / 2) : adjustMargin(false, parent.height, taskFrame.margins.top)\n        }\n\n        width: height\n        height: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 16 : (parent.height - adjustMargin(false, parent.height, taskFrame.margins.top)\n            - adjustMargin(false, parent.height, taskFrame.margins.bottom))"
+    }
+   ]
   },
   {
    "find": "                    width: Math.min(task.parent.minimumWidth, tasks.height)\n",
-   "replace": "                    width: tasksRoot.xpTaskband && !task.inPopup ? 16 : Math.min(task.parent.minimumWidth, tasks.height)\n"
+   "replace": "                    width: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 16 : Math.min(task.parent.minimumWidth, tasks.height)\n",
+   "alternatives": [
+    {
+     "find": "                    width: Math.min(task.parent.minimumWidth, tasks.height) - adjustMargin(true, task.width, taskFrame.margins.left)\n",
+     "replace": "                    width: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 16 : Math.min(task.parent.minimumWidth, tasks.height) - adjustMargin(true, task.width, taskFrame.margins.left)\n"
+    },
+    {
+     "find": "                    width: parent.width - adjustMargin(true, task.width, taskFrame.margins.left)\n",
+     "replace": "                    width: task.xpTaskbandRoot.xpTaskband && !task.inPopup ? 16 : parent.width - adjustMargin(true, task.width, taskFrame.margins.left)\n"
+    }
+   ]
   },
   {
    "find": "            leftMargin: taskFrame.margins.left + iconBox.width + LayoutMetrics.labelMargin\n",
-   "replace": "            leftMargin: tasksRoot.xpTaskband && !inPopup ? 10 + 16 + 3 : taskFrame.margins.left + iconBox.width + LayoutMetrics.labelMargin   // XPlasma\n"
+   "replace": "            leftMargin: task.xpTaskbandRoot.xpTaskband && !inPopup ? 10 + 16 + 3 : taskFrame.margins.left + iconBox.width + LayoutMetrics.labelMargin   // XPlasma\n",
+   "alternatives": [
+    {
+     "find": "            leftMargin: taskFrame.margins.left + iconBox.width + LayoutManager.labelMargin\n",
+     "replace": "            leftMargin: task.xpTaskbandRoot.xpTaskband && !inPopup ? 10 + 16 + 3 : taskFrame.margins.left + iconBox.width + LayoutManager.labelMargin   // XPlasma\n"
+    }
+   ]
   },
   {
    "find": "            topMargin: taskFrame.margins.top\n            rightMargin: taskFrame.margins.right + (audioStreamIcon",
-   "replace": "            topMargin: taskFrame.margins.top - (tasksRoot.xpTaskband && !inPopup ? 1 : 0)   // XPlasma: XP's baseline, 1px higher\n            rightMargin: taskFrame.margins.right + (audioStreamIcon"
+   "replace": "            topMargin: taskFrame.margins.top - (task.xpTaskbandRoot.xpTaskband && !inPopup ? 1 : 0)   // XPlasma: XP's baseline, 1px higher\n            rightMargin: taskFrame.margins.right + (audioStreamIcon",
+   "alternatives": [
+    {
+     "find": "            topMargin: taskFrame.margins.top\n            rightMargin: taskFrame.margins.right + (audioStreamIcon",
+     "replace": "            topMargin: taskFrame.margins.top - (task.xpTaskbandRoot.xpTaskband && !inPopup ? 1 : 0)   // XPlasma: XP's baseline, 1px higher\n            rightMargin: taskFrame.margins.right + (audioStreamIcon"
+    }
+   ]
   },
   {
    "find": "            bottomMargin: taskFrame.margins.bottom\n        }\n\n        wrapMode",
-   "replace": "            bottomMargin: taskFrame.margins.bottom + (tasksRoot.xpTaskband && !inPopup ? 1 : 0)\n        }\n\n        wrapMode"
+   "replace": "            bottomMargin: taskFrame.margins.bottom + (task.xpTaskbandRoot.xpTaskband && !inPopup ? 1 : 0)\n        }\n\n        wrapMode",
+   "alternatives": [
+    {
+     "find": "            bottomMargin: taskFrame.margins.bottom\n        }\n\n        wrapMode",
+     "replace": "            bottomMargin: taskFrame.margins.bottom + (task.xpTaskbandRoot.xpTaskband && !inPopup ? 1 : 0)\n        }\n\n        wrapMode"
+    }
+   ]
   },
   {
    "find": "        id: label\n",
@@ -148,6 +218,11 @@
  ],
  "notifications/global/Globals.qml": [
   {
+   "find": "    onPlasmoidChanged: {\n        if (!plasmoid) {\n",
+   "replace": "    onPlasmoidChanged: {\n        if (!plasmoid && plasmoidItems.length > 0) {\n",
+   "optional": true
+  },
+  {
    "find": "import org.kde.kirigami 2.11 as Kirigami\n",
    "replace": "import org.kde.kirigami 2.11 as Kirigami\nimport org.kde.ksvg as KSvg\n"
   },
@@ -165,7 +240,23 @@
   },
   {
    "find": "        }\n        onObjectAdded: (index, object) => {\n            positionPopups();\n",
-   "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            positionPopups();\n"
+   "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof popupNotificationsModel.playSoundHint === \"function\")\n                    popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            positionPopups();\n",
+   "alternatives": [
+    {
+     "find": "        }\n        onObjectAdded: (index, object) => {\n            globals.positionPopups();\n",
+     "replace": "        }\n        }\n        onObjectAdded: (index, object) => {\n            if (globals.xpBalloons) {\n                if (typeof popupNotificationsModel.playSoundHint === \"function\")\n                    popupNotificationsModel.playSoundHint(popupNotificationsModel.index(index, 0));\n                globals.xpAdvance();\n                return;\n            }\n            globals.positionPopups();\n"
+    }
+   ]
+  },
+  {
+   "find": "        const containment = plasmoid.containment;\n",
+   "replace": "        const containment = plasmoid.containment;\n        if (!containment) return Qt.rect(0, 0, -1, -1);\n",
+   "optional": true
+  },
+  {
+   "find": "        globals.plasmoid = globals.plasmoidItem.plasmoid;",
+   "replace": "        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;",
+   "optional": true
   }
  ],
  "notifications/main.qml": [
@@ -210,30 +301,75 @@
  ],
  "desktopcontainment/FolderItemDelegate.qml": [
   {
+   "find": "    id: main\n",
+   "replace": "    id: main\n    readonly property bool xpOnDesktop: typeof isOnRootView !== \"undefined\" ? isOnRootView : Plasmoid.isContainment\n    readonly property bool xpSelected: typeof selected !== \"undefined\" ? selected : !!model.selected\n",
+   "unlessContains": "readonly property bool xpOnDesktop:"
+  },
+  {
    "find": "                    PlasmaExtras.Highlight {\n                        // Workaround for a bug where the frameComponent does not\n                        // get unloaded when items are dragged to a different\n                        // place on the desktop.\n                        visible: this === frameLoader.item\n                        hovered: impl.hovered\n                        pressed: main.selected\n                        active: Window.active\n                    }",
-   "replace": "                    Item {\n                        // XPlasma: XP desktop icon selection: selection-coloured label box, tinted icon, no hover frame.\n                        visible: this === frameLoader.item\n                        PlasmaExtras.Highlight {\n                            anchors.fill: parent\n                            visible: !main.isOnRootView\n                            hovered: impl.hovered\n                            pressed: main.selected\n                            active: Window.active\n                        }\n                        Rectangle {\n                            // XP fills the label's text bounds plus a 2px side margin.\n                            visible: main.isOnRootView && !!(main.selected || (main.model && main.model.selected)) && Window.active && !label.renaming\n                            x: label.x + (label.width - label.contentWidth) / 2 - 2\n                            y: label.y\n                            width: label.contentWidth + 4\n                            height: label.contentHeight\n                            color: Kirigami.Theme.highlightColor\n                        }\n                    }",
+   "replace": "                    Item {\n                        // XPlasma: XP desktop icon selection: selection-coloured label box, tinted icon, no hover frame.\n                        visible: this === frameLoader.item\n                        PlasmaExtras.Highlight {\n                            anchors.fill: parent\n                            visible: !main.xpOnDesktop\n                            hovered: impl.hovered\n                            pressed: main.selected\n                            active: Window.active\n                        }\n                        Rectangle {\n                            // XP fills the label's text bounds plus a 2px side margin.\n                            visible: main.xpOnDesktop && main.xpSelected && Window.active && !label.renaming\n                            x: label.x + (label.width - label.contentWidth) / 2 - 2\n                            y: label.y\n                            width: label.contentWidth + 4\n                            height: label.contentHeight\n                            color: Kirigami.Theme.highlightColor\n                        }\n                    }",
    "optional": true,
    "unlessContains": "XPlasma: XP desktop icon selection:"
   },
   {
    "find": "                    PlasmaExtras.Highlight {\n                        // Workaround for a bug where the frameComponent does not\n                        // get unloaded when items are dragged to a different\n                        // place on the desktop.\n                        visible: this === frameLoader.item\n                        hovered: impl.iconAndLabelsShouldlookSelected\n                        pressed: main.model.selected\n                        active: Window.active\n                    }",
-   "replace": "                    Item {\n                        // XPlasma: XP desktop icon selection: selection-coloured label box, tinted icon, no hover frame.\n                        visible: this === frameLoader.item\n                        PlasmaExtras.Highlight {\n                            anchors.fill: parent\n                            visible: !main.isOnRootView\n                            hovered: impl.iconAndLabelsShouldlookSelected\n                            pressed: main.model.selected\n                            active: Window.active\n                        }\n                        Rectangle {\n                            // XP fills the label's text bounds plus a 2px side margin.\n                            visible: main.isOnRootView && !!(main.selected || (main.model && main.model.selected)) && Window.active && !label.renaming\n                            x: label.x + (label.width - label.contentWidth) / 2 - 2\n                            y: label.y\n                            width: label.contentWidth + 4\n                            height: label.contentHeight\n                            color: Kirigami.Theme.highlightColor\n                        }\n                    }",
+   "replace": "                    Item {\n                        // XPlasma: XP desktop icon selection: selection-coloured label box, tinted icon, no hover frame.\n                        visible: this === frameLoader.item\n                        PlasmaExtras.Highlight {\n                            anchors.fill: parent\n                            visible: !main.xpOnDesktop\n                            hovered: impl.iconAndLabelsShouldlookSelected\n                            pressed: main.model.selected\n                            active: Window.active\n                        }\n                        Rectangle {\n                            // XP fills the label's text bounds plus a 2px side margin.\n                            visible: main.xpOnDesktop && main.xpSelected && Window.active && !label.renaming\n                            x: label.x + (label.width - label.contentWidth) / 2 - 2\n                            y: label.y\n                            width: label.contentWidth + 4\n                            height: label.contentHeight\n                            color: Kirigami.Theme.highlightColor\n                        }\n                    }",
    "optional": true,
-   "unlessContains": "XPlasma: XP desktop icon selection:"
+   "unlessContains": "XPlasma: XP desktop icon selection:",
+   "alternatives": [
+    {
+     "find": "                    PlasmaExtras.Highlight {\n                        // Workaround for a bug where the frameComponent does not\n                        // get unloaded when items are dragged to a different\n                        // place on the desktop.\n                        visible: this === frameLoader.item\n                        hovered: impl.iconAndLabelsShouldlookSelected\n                        pressed: model.selected\n                        active: Window.active\n                    }",
+     "replace": "                    Item {\n                        // XPlasma: XP desktop icon selection: selection-coloured label box, tinted icon, no hover frame.\n                        visible: this === frameLoader.item\n                        PlasmaExtras.Highlight {\n                            anchors.fill: parent\n                            visible: !main.xpOnDesktop\n                            hovered: impl.iconAndLabelsShouldlookSelected\n                            pressed: main.model.selected\n                            active: Window.active\n                        }\n                        Rectangle {\n                            // XP fills the label's text bounds plus a 2px side margin.\n                            visible: main.xpOnDesktop && main.xpSelected && Window.active && !label.renaming\n                            x: label.x + (label.width - label.contentWidth) / 2 - 2\n                            y: label.y\n                            width: label.contentWidth + 4\n                            height: label.contentHeight\n                            color: Kirigami.Theme.highlightColor\n                        }\n                    }"
+    }
+   ]
   },
   {
    "find": "                PlasmaExtras.ShadowedLabel {\n",
-   "replace": "                ColorOverlay {\n                    // XPlasma: XP blends a selected desktop icon 50% with the selection colour.\n                    anchors.fill: icon\n                    z: 2\n                    source: icon\n                    color: Kirigami.Theme.highlightColor\n                    opacity: 0.5\n                    visible: main.isOnRootView && !!(main.selected || (main.model && main.model.selected)) && Window.active\n                }\n\n                PlasmaExtras.ShadowedLabel {\n",
+   "replace": "                ColorOverlay {\n                    // XPlasma: XP blends a selected desktop icon 50% with the selection colour.\n                    anchors.fill: icon\n                    z: 2\n                    source: icon\n                    color: Kirigami.Theme.highlightColor\n                    opacity: 0.5\n                    visible: main.xpOnDesktop && main.xpSelected && Window.active\n                }\n\n                PlasmaExtras.ShadowedLabel {\n",
    "unlessContains": "XPlasma: XP blends a selected desktop icon"
   },
   {
    "find": "                    renderShadow: main.isOnRootView && !renaming\n",
-   "replace": "                    renderShadow: main.isOnRootView && !renaming && !(!!(main.selected || (main.model && main.model.selected)) && Window.active)\n",
-   "unlessContains": "renderShadow: main.isOnRootView && !renaming && !("
+   "replace": "                    renderShadow: main.xpOnDesktop && !renaming && !(main.xpSelected && Window.active)\n",
+   "unlessContains": "renderShadow: main.isOnRootView && !renaming && !(",
+   "alternatives": [
+    {
+     "find": "                    renderShadow: Plasmoid.isContainment && (!editor || editor.targetItem !== main)\n",
+     "replace": "                    renderShadow: Plasmoid.isContainment && (!editor || editor.targetItem !== main) && !(main.xpSelected && Window.active)\n"
+    },
+    {
+     "find": "                    renderShadow: main.isOnRootView && (!editor || editor.targetItem !== main)\n",
+     "replace": "                    renderShadow: main.xpOnDesktop && (!editor || editor.targetItem !== main) && !(main.xpSelected && Window.active)\n"
+    },
+    {
+     "find": "                    renderShadow: Plasmoid.isContainment && !renaming\n",
+     "replace": "                    renderShadow: Plasmoid.isContainment && !renaming && !(main.xpSelected && Window.active)\n"
+    }
+   ]
   },
   {
    "find": "                    id: label\n",
    "replace": "                    id: label\n{{crisp-label}}"
+  },
+  {
+   "find": "                    DropShadow {\n",
+   "replace": "                    DropShadow {\n                        // XP desktop icons have no shadow; labels keep theirs.\n                        visible: !main.xpOnDesktop\n",
+   "unlessContains": "XP desktop icons have no shadow",
+   "optional": true
+  }
+ ],
+ "systemtray/HiddenItemsView.qml": [
+  {
+   "find": "return value === PlasmaCore.Types.PassiveStatus;",
+   "replace": "return value === PlasmaCore.Types.PassiveStatus && !root.xpRevealHidden(sourceModel.data(sourceModel.index(sourceRow, 0, sourceParent), Qt.UserRole + 2));",
+   "optional": true,
+   "unlessContains": "!root.xpRevealHidden(",
+   "alternatives": [
+    {
+     "find": "return value === PlasmaCore.Types.PassiveStatus\n",
+     "replace": "return value === PlasmaCore.Types.PassiveStatus && !root.xpRevealHidden(sourceModel.data(sourceModel.index(sourceRow, 0, sourceParent), Qt.UserRole + 2));\n"
+    }
+   ]
   }
  ]
 }

@@ -11,6 +11,15 @@ or install.sh as the desktop user. The GUI permits individual feature selection,
 icon/wallpaper resolution choices and dark application colors. It never logs out
 or reboots automatically. System components and dependencies request authentication.
 
+Failed operations show a copyable report with system details, captured output,
+recovery messages and a GitHub issues link. A private copy is retained at
+`~/.local/state/xplasma-plus/last-failure.log`.
+
+The XP taskbar is required when selected. Packaged-QML ports and compiled plugin
+recipes retain the XP widgets; missing or incompatible components fail and roll
+back rather than substituting stock widgets. See `docs/wiki/Compatibility.md`
+in the source repository for the branch matrix and testing status.
+
 Native components build against the receiving machine's KDE/Qt. Desktop features
 target Plasma 6 on supported Fedora, Debian/Ubuntu, Arch and openSUSE families.
 Unknown distributions can use resource-only features when tools already exist.

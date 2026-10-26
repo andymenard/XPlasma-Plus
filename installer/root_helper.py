@@ -3,7 +3,7 @@
 import argparse,configparser,json,os,pwd,shutil,subprocess,sys
 from pathlib import Path
 BASE=Path(__file__).resolve().parent
-from system_profile import detect
+from system_profile import detect,widget_target
 from dependencies import install
 STATE='kde-xp-suite'
 PATHS={
@@ -64,6 +64,8 @@ def greeter_environment():
 def deps(features,native_ready=False,caption_ready=False):
  profile=detect()
  if not profile['family']:raise RuntimeError('No supported system package manager detected.')
+ # Packaged-QML XP ports need the core engine, but no compiled widget SDK.
+ if 'taskbar' in features and not widget_target(profile):features=(set(features)-{'taskbar'})|{'theme_manager'}
  install(profile['family'],features,run,native_ready=native_ready,caption_ready=caption_ready)
 def rebuild():
  engine=detect()['boot']

@@ -29,3 +29,15 @@ existing installation and keeps your current theme, dark mode and Quick Launch.
 Installed features stay selected (new ones can be added); to drop one, remove the
 installation first. Remove still restores the settings from before the first
 installation, and a failed upgrade returns to the release it was upgrading.
+
+## XP widget compatibility and failure reports
+
+Source builds retain the XP Start menu, task buttons, clock, tray and notification
+UI. They patch packaged QML on older Plasma branches and build the matching XP
+plugins on newer branches. Unknown layouts or missing XP components stop the
+operation and trigger recovery; stock widgets are not substituted.
+
+After a failed operation, use **Copy report** in the failure dialog and paste the
+report into a new or existing GitHub issue. It includes system details, installer
+output and recovery messages. A private copy is saved at
+`~/.local/state/xplasma-plus/last-failure.log`.

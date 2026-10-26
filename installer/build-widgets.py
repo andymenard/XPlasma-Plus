@@ -2,13 +2,15 @@
 """Build only the four XP widget plugins against this system's libraries."""
 import hashlib,json,os,shutil,subprocess,sys,tarfile
 import build_cache
+from widget_sources import verified_archive
 from pathlib import Path
-from system_profile import detect
+from system_profile import detect,widget_target
 
 def run(args):subprocess.run(list(map(str,args)),check=True,env={**os.environ,'QT_QPA_PLATFORM':'offscreen'})
 def main():
  suite=Path(__file__).resolve().parent;build=Path(sys.argv[1]);jobs=sys.argv[2]
- series='.'.join(map(str,detect()['plasma'][:2]));cli=build/'runtime/bin/xplasma'
+ series=widget_target(detect());cli=build/'runtime/bin/xplasma'
+ if not series:raise RuntimeError('No matching XP widget build recipe for this Plasma/Qt combination.')
  info=subprocess.check_output([str(cli),'fork-info',series],text=True,env={**os.environ,'QT_QPA_PLATFORM':'offscreen'}).splitlines()
  root=build/'plasma'/series;pristine=root/'pristine';patched=root/'patched'
  pristine.mkdir(parents=True,exist_ok=True)
@@ -17,8 +19,7 @@ def main():
   parts=line.split()
   if parts[0]=='source':
    _,project,version,expected=parts;sources[project]=version
-   archive=suite/'source'/(project+'-'+version+'.tar.xz')
-   if hashlib.sha256(archive.read_bytes()).hexdigest()!=expected:raise RuntimeError('Plasma source checksum mismatch: '+archive.name)
+   archive=verified_archive(suite,build/'plasma-source-cache',project,version,expected)
    if not (pristine/(project+'-'+version)).exists():
     with tarfile.open(archive) as t:t.extractall(pristine,filter='data')
   elif parts[0]=='target':targets.setdefault(parts[1],[]).append(parts[2])
@@ -41,7 +42,11 @@ def main():
    else:pending.append(name)
   if not pending:continue
   native=root/'build'/project
-  run(['cmake','-S',patched/(project+'-'+sources[project]),'-B',native,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTING=OFF'])
+  configure=['cmake','-S',patched/(project+'-'+sources[project]),'-B',native,'-G','Ninja','-DCMAKE_BUILD_TYPE=Release','-DBUILD_TESTING=OFF']
+  # Only the panel applet is built from plasma-desktop. Its unrelated X11
+  # mouse/touchpad KCMs require SDKs that older packages do not ship.
+  if project=='plasma-desktop':configure+=['-DBUILD_KCM_MOUSE_X11=OFF','-DBUILD_KCM_TOUCHPAD_X11=OFF']
+  run(configure)
   run(['cmake','--build',native,'--parallel',jobs,'--target',*pending])
   for name in pending:
    plugin=native/'bin/plasma/applets'/(name+'.so')
@@ -52,3 +57,4 @@ def main():
    build_cache.store_component(plugin,relative,identities[name])
  (build/'widget-components.json').write_text(json.dumps(records,indent=2)+'\n')
 if __name__=='__main__':main()
+

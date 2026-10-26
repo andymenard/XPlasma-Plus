@@ -6,7 +6,7 @@ import org.kde.kitemmodels as KItemModels
 import org.kde.kcmutils as KCM
 import org.kde.plasma.private.kicker as Kicker
 import org.kde.plasma.private.sessions as Sessions
-import org.kde.plasma.workspace.dbus as DBus
+import "popupguard-v8" as PopupGuard
 
 Item {
     id: backend
@@ -31,6 +31,7 @@ Item {
     readonly property bool canLogout: session.canLogout
     readonly property bool canShutdown: session.canShutdown
 
+    PopupGuard.SessionActions { id: sessionActions }
     KCoreAddons.KUser { id: user }
     Sessions.SessionManagement { id: session }
     Kicker.RecentUsageModel {
@@ -198,8 +199,7 @@ Item {
         } else if (action === "shutdown" && canShutdown) {
             session.requestShutdown(Sessions.SessionManagement.ConfirmationMode.ForcePrompt);
         } else if (action === "run" || action === "search") {
-            DBus.SessionBus.asyncCall({service: "org.kde.krunner", path: "/App",
-                iface: "org.kde.krunner.App", member: "display", arguments: []});
+            sessionActions.showRunner();
         } else if (action !== "close") { return; }
         closeRequested();
     }

@@ -1,0 +1,365 @@
+name: XP widgets across Plasma 6
+on:
+  pull_request:
+    paths: ['native/**', 'installer/**', '.github/workflows/plasma-widget-compatibility.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  vm-graphics-probe:
+    runs-on: ubuntu-24.04
+    container: archlinux:latest
+    timeout-minutes: 15
+    steps:
+      - name: Check software-accelerated virtual-machine graphics
+        env:
+          DISPLAY: ':98'
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          pacman -Syu --needed --noconfirm qemu-desktop xorg-server-xvfb mesa
+          Xvfb :98 -screen 0 1280x800x24 > /tmp/vm-xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          result=0
+          timeout 8 qemu-system-x86_64 -nodefaults -machine q35,accel=tcg -m 256 -device virtio-vga-gl -display gtk,gl=on -S > /tmp/vm-graphics.log 2>&1 || result=$?
+          cat /tmp/vm-graphics.log
+          test "$result" = 124
+  source-matrix:
+    runs-on: ubuntu-24.04
+    container: fedora:44
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Install build and QML parser dependencies
+        run: dnf install -y git gcc-c++ cmake ninja-build python3 qt6-qtbase-devel qt6-qtdeclarative-devel libarchive-devel zlib-devel xz-devel bzip2-devel curl
+      - uses: actions/checkout@v4
+      - name: Build the production patch checker and native regressions
+        run: |
+          cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/build --parallel 3 --target check-widget-patches test-app test-style-geometry test-startmenu
+      - name: Verify XP behavior and QML syntax on every branch
+        run: python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmlformat /usr/lib64/qt6/bin/qmlformat
+      - name: Run core presentation regressions
+        run: |
+          /tmp/build/tests/app/test-app strictPatchVariants applyRefusesPartialLook
+          /tmp/build/tests/style/test-style-geometry
+          /tmp/build/tests/app/test-startmenu
+  debian-trixie:
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    timeout-minutes: 45
+    env:
+      QT_QPA_PLATFORM: offscreen
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Bootstrap Debian
+        run: apt-get update && apt-get install -y python3 git ca-certificates
+      - uses: actions/checkout@v4
+      - name: Install taskbar dependencies through the real installer
+        run: |
+          python3 - <<'PY'
+          import subprocess,sys
+          sys.path.insert(0,'installer')
+          from dependencies import install
+          install('apt',{'taskbar'},lambda args:subprocess.run(args,check=True))
+          subprocess.run(['apt-get','install','-y','plasma-desktop','plasma-workspace','qt6-declarative-dev-tools'],check=True)
+          from system_profile import detect,widget_series
+          profile=detect();print(profile,flush=True)
+          if widget_series(profile)!='6.3':raise RuntimeError('Update the Debian packaged-widget target before certifying a new branch')
+          PY
+      - name: Build the runtime and check Debian's actual packaged QML
+        run: |
+          cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/build --parallel 3 --target xplasma-runtime check-widget-patches
+          python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmllint /usr/lib/qt6/bin/qmllint --installed-series 6.3
+      - name: Install virtual desktop test tools
+        run: |
+          apt-get install -y xvfb openbox xterm imagemagick xdotool python3-pil libglib2.0-bin dbus-x11 procps kwin-wayland xwayland libgl1-mesa-dri
+          cmake --install /tmp/build --prefix /tmp/xp/runtime
+      - name: Exercise a real Plasma desktop in a disposable home
+        env:
+          QT_QPA_PLATFORM: xcb
+          QT_QUICK_BACKEND: software
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          KWIN_COMPOSE: Q
+          QT_FORCE_STDERR_LOGGING: '1'
+          QT_LOGGING_RULES: 'kwin_core.debug=true;KWIN_UTILS.debug=true;org.kde.plasma.libtaskmanager.debug=true'
+          DISPLAY: ':99'
+          XDG_CURRENT_DESKTOP: KDE
+          XDG_MENU_PREFIX: plasma-
+          XDG_DATA_HOME: /tmp/xp-live-home/.local/share
+          XDG_CONFIG_HOME: /tmp/xp-live-home/.config
+          XDG_CACHE_HOME: /tmp/xp-live-home/.cache
+          XDG_SESSION_TYPE: x11
+          KDE_SESSION_VERSION: '6'
+          LC_ALL: C.UTF-8
+        run: |
+          mkdir -p /tmp/xp-live-home /tmp/xp-live-runtime
+          chmod 700 /tmp/xp-live-runtime
+          touch /tmp/xp-live-home/.xplasma-disposable-desktop
+          Xvfb :99 -screen 0 1280x800x24 > /tmp/xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          if [ "${XP_EXPECTED_PLASMA:-}" = 6.8 ]; then
+            python3 native/ci/live-desktop-vm.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+            exit 0
+          fi
+          cat > /tmp/xp-live-session.sh <<'SH'
+          #!/bin/sh
+          export QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland
+          exec python3 "$GITHUB_WORKSPACE/native/ci/live-desktop.py" --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets --nested-kwin
+          SH
+          chmod +x /tmp/xp-live-session.sh
+          # The distro binary requests optional scheduling capabilities that
+          # Docker does not grant. Run nested KWin without those capabilities.
+          python3 - <<'PYCAP'
+          import errno,os,shutil
+          binary=shutil.which('kwin_wayland')
+          if not binary:raise RuntimeError('KWin Wayland is missing')
+          try:os.removexattr(binary,'security.capability')
+          except OSError as error:
+              if error.errno not in (errno.ENODATA,errno.ENOTSUP):raise
+          PYCAP
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --prepare-session-only
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime kbuildsycoca6 --noincremental
+          result=0
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
+          mkdir -p /tmp/live-desktop-results
+          cp /tmp/kwin-session.log /tmp/live-desktop-results/kwin.log
+          cat /tmp/kwin-session.log
+          test "$result" = 0
+          python3 -c 'import json; assert json.load(open("/tmp/live-desktop-results/result.json"))["status"] == "passed"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-desktop-debian-trixie
+          path: /tmp/live-desktop-results
+          retention-days: 7
+  oldest-qt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler and system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ libarchive-dev zlib1g-dev liblzma-dev libbz2-dev libegl1 libopengl0 libgl1 libxkbcommon0 libxcb-cursor0
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.6.3'
+          modules: qt5compat
+          cache: true
+      - name: Build the XP engine and Start menu on the oldest Plasma 6 Qt
+        run: |
+          cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/build --parallel 3 --target xplasma-runtime test-startmenu test-style-geometry -- -k 0
+          /tmp/build/tests/app/test-startmenu
+          /tmp/build/tests/style/test-style-geometry
+  compiled-widgets:
+    name: XP desktop / Plasma ${{ matrix.plasma }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Official period images retain the signing keyrings for these
+          # frozen repositories; package signature verification stays enabled.
+          - plasma: '6.0'
+            image: archlinux:base-20240101.0.204074
+            family: pacman
+            release_only: '0'
+            archive_date: '2024/05/01'
+          - plasma: '6.1'
+            image: archlinux:base-20240714.0.246936
+            family: pacman
+            release_only: '0'
+            archive_date: '2024/07/15'
+          - plasma: '6.2'
+            image: archlinux:base-20241013.0.269705
+            family: pacman
+            release_only: '0'
+            archive_date: '2024/10/20'
+          - plasma: '6.4'
+            image: archlinux:base-20250727.0.390543
+            family: pacman
+            release_only: '0'
+            archive_date: '2025/08/01'
+          - plasma: '6.5'
+            image: archlinux:base-20260125.0.484595
+            family: pacman
+            release_only: '0'
+            archive_date: '2026/02/01'
+          - plasma: '6.6'
+            image: fedora:44
+            family: dnf
+            release_only: '1'
+          - plasma: '6.7'
+            image: fedora:44
+            family: dnf
+            release_only: '0'
+          - plasma: '6.8'
+            image: archlinux:latest
+            family: pacman
+            release_only: '0'
+    container: ${{ matrix.image }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      XP_RELEASE_ONLY: ${{ matrix.release_only }}
+      XP_EXPECTED_PLASMA: ${{ matrix.plasma }}
+      XP_FAMILY: ${{ matrix.family }}
+      XP_ARCHIVE_DATE: ${{ matrix.archive_date }}
+      XP_BUILD_CACHE: /tmp/xp-component-cache
+    steps:
+      - name: Bootstrap container
+        run: |
+          if [ "$XP_FAMILY" = dnf ]; then
+            dnf install -y python3 git ca-certificates
+          else
+            if [ -n "$XP_ARCHIVE_DATE" ]; then
+              printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "$XP_ARCHIVE_DATE" > /etc/pacman.d/mirrorlist
+              case "$XP_EXPECTED_PLASMA" in
+                6.0|6.1|6.2|6.4)
+                  # As in archlinux/archlinux-repro: authenticate historical
+                  # packages at their snapshot date, retaining all signature
+                  # and owner-trust checks. Only this disposable CI keyring
+                  # uses historical time; the machine clock is unchanged.
+                  snapshot_epoch=$(date -u -d "$(printf '%s' "$XP_ARCHIVE_DATE" | tr / -) 23:59:59" +%s)
+                  mv /etc/pacman.d/gnupg /tmp/image-pacman-keyring
+                  install -d -m 700 /etc/pacman.d/gnupg
+                  printf 'faked-system-time %s\n' "$snapshot_epoch" > /etc/pacman.d/gnupg/gpg.conf
+                  pacman-key --init
+                  pacman-key --populate archlinux
+                  ;;
+              esac
+              pacman -Syy --noconfirm --needed archlinux-keyring
+              pacman -Suu --noconfirm --needed python git ca-certificates
+            else
+              pacman -Syu --noconfirm --needed python git ca-certificates
+            fi
+          fi
+      - uses: actions/checkout@v4
+      - name: Install this distribution's complete widget SDK
+        run: |
+          python3 - <<'PY'
+          import os,subprocess,sys
+          sys.path.insert(0,'installer')
+          from dependencies import install
+          family=os.environ['XP_FAMILY']
+          def run(args):
+              if args[0]=='dnf' and os.environ['XP_RELEASE_ONLY']=='1':args=[args[0],'--disablerepo=updates','--setopt=tsflags=noscripts',*args[1:]]
+              subprocess.run(args,check=True)
+          if family=='dnf':run(['dnf','install','-y','plasma-workspace'])
+          packaged=os.environ['XP_EXPECTED_PLASMA'] in {'6.0','6.1','6.2','6.4'}
+          install(family,{'taskbar'},run,native_ready=packaged)
+          if packaged:
+              # These versions patch packaged QML; no KDE plugin build SDK is
+              # needed, but build the engine against their actual Qt libraries.
+              run(['pacman','-S','--needed','--noconfirm','base-devel','cmake','ninja','pkgconf','libarchive','zlib','xz','bzip2','qt6-base','qt6-declarative','qt6-wayland','qt6-svg','qt6-shadertools','libplasma','kwin'])
+          from system_profile import detect,widget_series
+          profile=detect();print(profile,flush=True)
+          if widget_series(profile)!=os.environ['XP_EXPECTED_PLASMA']:
+              raise RuntimeError('Container no longer supplies the expected Plasma ABI; update its snapshot before certifying this target.')
+          PY
+      - uses: actions/cache/restore@v4
+        id: widget-cache
+        with:
+          path: /tmp/xp-component-cache
+          key: xp-widget-components-${{ matrix.plasma }}-${{ hashFiles('native/src/app/overrides/**', 'installer/build-widgets.py', 'installer/build_cache.py') }}
+      - name: Build the engine against this host's Qt and KDE
+        run: |
+          cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/xp/runtime
+          cmake --build /tmp/build --parallel 3 --target xplasma-runtime check-widget-patches
+          cmake --install /tmp/build
+      - name: Check the actual packaged QML on older Plasma
+        if: matrix.plasma == '6.0' || matrix.plasma == '6.1' || matrix.plasma == '6.2' || matrix.plasma == '6.4'
+        run: python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmllint /usr/lib/qt6/bin/qmllint --installed-series "$XP_EXPECTED_PLASMA"
+      - name: Build every required XP plugin and check public Qt ABI use
+        if: matrix.plasma == '6.5' || matrix.plasma == '6.6' || matrix.plasma == '6.7' || matrix.plasma == '6.8'
+        run: |
+          mkdir -p /tmp/xp/source
+          ln -s "$GITHUB_WORKSPACE/native" /tmp/xp/source/xplasma
+          python3 installer/build-widgets.py /tmp/xp 3
+      - uses: actions/cache/save@v4
+        if: always() && steps.widget-cache.outputs.cache-hit != 'true'
+        with:
+          path: /tmp/xp-component-cache
+          key: ${{ steps.widget-cache.outputs.cache-primary-key }}
+      - name: Install virtual desktop test tools
+        run: |
+          if [ "$XP_FAMILY" = dnf ]; then
+            dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng gdb xorg-x11-server-Xwayland mesa-dri-drivers
+          else
+            pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus gdb xorg-xwayland mesa
+            if [ "$XP_EXPECTED_PLASMA" = 6.8 ]; then
+              pacman -S --needed --noconfirm qemu-desktop qemu-img openssh libisoburn edk2-ovmf
+            fi
+          fi
+      - name: Exercise a real Plasma desktop in a disposable home
+        env:
+          QT_QPA_PLATFORM: xcb
+          QT_QUICK_BACKEND: software
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          KWIN_COMPOSE: Q
+          QT_FORCE_STDERR_LOGGING: '1'
+          QT_LOGGING_RULES: 'kwin_core.debug=true;KWIN_UTILS.debug=true;org.kde.plasma.libtaskmanager.debug=true'
+          DISPLAY: ':99'
+          XDG_CURRENT_DESKTOP: KDE
+          XDG_MENU_PREFIX: plasma-
+          XDG_DATA_HOME: /tmp/xp-live-home/.local/share
+          XDG_CONFIG_HOME: /tmp/xp-live-home/.config
+          XDG_CACHE_HOME: /tmp/xp-live-home/.cache
+          XDG_SESSION_TYPE: x11
+          KDE_SESSION_VERSION: '6'
+          LC_ALL: C.UTF-8
+        run: |
+          mkdir -p /tmp/xp-live-home /tmp/xp-live-runtime
+          chmod 700 /tmp/xp-live-runtime
+          touch /tmp/xp-live-home/.xplasma-disposable-desktop
+          Xvfb :99 -screen 0 1280x800x24 > /tmp/xvfb.log 2>&1 &
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid"' EXIT
+          sleep 2
+          if [ "${XP_EXPECTED_PLASMA:-}" = 6.8 ]; then
+            python3 native/ci/live-desktop-vm.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+            exit 0
+          fi
+          cat > /tmp/xp-live-session.sh <<'SH'
+          #!/bin/sh
+          export QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland
+          exec python3 "$GITHUB_WORKSPACE/native/ci/live-desktop.py" --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --public-release-assets --nested-kwin
+          SH
+          chmod +x /tmp/xp-live-session.sh
+          # The distro binary requests optional scheduling capabilities that
+          # Docker does not grant. Run nested KWin without those capabilities.
+          python3 - <<'PYCAP'
+          import errno,os,shutil
+          binary=shutil.which('kwin_wayland')
+          if not binary:raise RuntimeError('KWin Wayland is missing')
+          try:os.removexattr(binary,'security.capability')
+          except OSError as error:
+              if error.errno not in (errno.ENODATA,errno.ENOTSUP):raise
+          PYCAP
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --prepare-session-only
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime kbuildsycoca6 --noincremental
+          result=0
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
+          mkdir -p /tmp/live-desktop-results
+          cp /tmp/kwin-session.log /tmp/live-desktop-results/kwin.log
+          cat /tmp/kwin-session.log
+          test "$result" = 0
+          python3 -c 'import json; assert json.load(open("/tmp/live-desktop-results/result.json"))["status"] == "passed"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-desktop-plasma-${{ matrix.plasma }}
+          path: /tmp/live-desktop-results
+          retention-days: 7
