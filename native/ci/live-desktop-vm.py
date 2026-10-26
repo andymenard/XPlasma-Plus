@@ -65,7 +65,7 @@ def main():
      if subprocess.run([*ssh,'true'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:break
      time.sleep(5)
     else:raise RuntimeError('Disposable VM did not become reachable')
-    run([*ssh,'sudo pacman -Syu --needed --noconfirm plasma-workspace plasma-desktop kdeplasma-addons kwin xorg-server xorg-xauth xorg-xrandr mesa mesa-utils xterm imagemagick xdotool python python-pillow glib2 dbus libarchive qt6-svg qt6-5compat'],timeout=1800)
+    run([*ssh,'sudo pacman -Syu --needed --noconfirm plasma-workspace plasma-desktop kdeplasma-addons plasma-pa kwin xorg-server xorg-xauth xorg-xrandr mesa mesa-utils xterm imagemagick xdotool python python-pillow glib2 dbus libarchive qt6-svg qt6-5compat'],timeout=1800)
     payload=work/'runtime.tar.gz'
     with tarfile.open(payload,'w:gz') as archive:
      archive.add(a.runtime.resolve(),arcname='runtime');archive.add(Path(__file__).with_name('live-desktop.py'),arcname='live-desktop.py')

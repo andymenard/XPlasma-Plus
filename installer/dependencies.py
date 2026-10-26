@@ -30,9 +30,9 @@ def packages(family,features,bootstrap=False,native_ready=False,caption_ready=Fa
  'pacman':'base-devel cmake ninja extra-cmake-modules qt6-base kio solid kio-extras udisks2',
  'zypper':'gcc-c++ cmake ninja extra-cmake-modules qt6-base-devel kf6-kio-devel kf6-solid-devel kio-extras6 udisks2'}[family]
  extras[family]['tray']={'apt':'plasma-pa plasma-nm powerdevil bluedevil kscreen dbus-bin qml6-module-qtcore qml6-module-qt-labs-folderlistmodel qml6-module-qtquick-controls qml6-module-qtquick-layouts','dnf':'plasma-pa plasma-nm powerdevil bluedevil kscreen dbus-tools','pacman':'plasma-pa plasma-nm powerdevil bluedevil kscreen dbus','zypper':'plasma6-pa plasma6-nm powerdevil6 bluedevil6 kscreen6 dbus-1'}[family]
- # Quick Launch is a runtime applet, including when compiled XP plugins are
- # already available and no widget build dependencies are installed.
- extras[family]['taskbar']={'apt':'plasma-desktop plasma-widgets-addons','dnf':'plasma-desktop kdeplasma-addons','pacman':'plasma-desktop kdeplasma-addons','zypper':'plasma6-desktop kdeplasma6-addons'}[family]
+ # Quick Launch and the notification service need their runtime providers,
+ # including with prebuilt XP plugins and no widget build dependencies.
+ extras[family]['taskbar']={'apt':'plasma-desktop plasma-widgets-addons plasma-pa','dnf':'plasma-desktop kdeplasma-addons plasma-pa','pacman':'plasma-desktop kdeplasma-addons plasma-pa','zypper':'plasma6-desktop kdeplasma6-addons plasma6-pa'}[family]
  extras[family]['control_panel']={'apt':'pulseaudio-utils network-manager','dnf':'pulseaudio-utils NetworkManager','pacman':'libpulse networkmanager','zypper':'pulseaudio-utils NetworkManager'}[family]
  extras[family]['icons']={'apt':'python3-pil','dnf':'python3-pillow','pacman':'python-pillow','zypper':'python3-Pillow'}[family]
  extras[family]['caption_animation']={
@@ -54,7 +54,7 @@ def xbps_packages(features,bootstrap=False,native_ready=False,caption_ready=Fals
   'firefox':'gtk+3 nss nspr alsa-lib dbus-glib libXt libX11 libXcomposite libXdamage libXrandr MesaLib',
   'login':'sddm python3-pyside6 python3-pyside6-dbus qt6-declarative qt6-qt5compat',
   'boot':'plymouth', 'apps':'gtk+3 gtk4 gsettings-desktop-schemas',
-  'taskbar':'plasma-desktop kdeplasma-addons',
+  'taskbar':'plasma-desktop kdeplasma-addons plasma-pa',
   'paint':'python3-pyqt6-webengine', 'media_player':'vlc',
   'sound_recorder':'python3-pyqt6-multimedia', 'volume_control':'pulseaudio-utils python3-pyqt6-multimedia',
   'command_prompt':'konsole', 'task_manager':'python3-psutil',
