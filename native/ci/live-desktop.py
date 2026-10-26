@@ -195,6 +195,11 @@ def main():
       subprocess.run(['timeout','30','gdb','--batch','-ex','run','-ex','thread apply all bt','--args',real,'--no-respawn'],stdout=trace,stderr=subprocess.STDOUT,check=False)
     raise
    time.sleep(5)
+   # Exercise the stock service before recording its diagnostics: notification
+   # history components are lazy and otherwise load for the first time only
+   # during the later XP notification test.
+   run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaStockBaseline','0','dialog-information','Stock desktop baseline','Baseline notification before applying XP','[]','{}','1000'])
+   time.sleep(4)
    baseline={line for line in (output/'plasmashell.log').read_text().splitlines() if diagnostic(line)}
    (output/'stock-baseline-diagnostics.json').write_text(json.dumps(sorted(baseline),indent=2)+'\n')
    snapshot(output,'before')

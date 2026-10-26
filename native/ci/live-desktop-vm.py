@@ -65,7 +65,7 @@ def main():
      if subprocess.run([*ssh,'true'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:break
      time.sleep(5)
     else:raise RuntimeError('Disposable VM did not become reachable')
-    run([*ssh,'sudo pacman -Syu --needed --noconfirm plasma-workspace plasma-desktop kwin xorg-server xorg-xauth xorg-xrandr mesa mesa-utils xterm imagemagick xdotool python python-pillow glib2 dbus libarchive qt6-svg qt6-5compat'],timeout=1800)
+    run([*ssh,'sudo pacman -Syu --needed --noconfirm plasma-workspace plasma-desktop kdeplasma-addons kwin xorg-server xorg-xauth xorg-xrandr mesa mesa-utils xterm imagemagick xdotool python python-pillow glib2 dbus libarchive qt6-svg qt6-5compat'],timeout=1800)
     payload=work/'runtime.tar.gz'
     with tarfile.open(payload,'w:gz') as archive:
      archive.add(a.runtime.resolve(),arcname='runtime');archive.add(Path(__file__).with_name('live-desktop.py'),arcname='live-desktop.py')
@@ -78,7 +78,7 @@ tar -xzf /tmp/runtime.tar.gz -C /tmp/xp
 touch "$HOME/.xplasma-disposable-desktop"
 sudo sh -c 'nohup /usr/lib/Xorg :99 -ac -noreset -nolisten tcp vt7 > /tmp/xplasma-xorg.log 2>&1 &'
 export XDG_DATA_HOME="$HOME/.local/share" XDG_CONFIG_HOME="$HOME/.config" XDG_CACHE_HOME="$HOME/.cache"
-export DISPLAY=:99 XDG_RUNTIME_DIR=/tmp/xp-live-runtime XDG_CURRENT_DESKTOP=KDE KDE_SESSION_VERSION=6 LC_ALL=C.UTF-8 QT_FORCE_STDERR_LOGGING=1
+export DISPLAY=:99 XDG_RUNTIME_DIR=/tmp/xp-live-runtime XDG_CURRENT_DESKTOP=KDE XDG_MENU_PREFIX=plasma- KDE_SESSION_VERSION=6 LC_ALL=C.UTF-8 QT_FORCE_STDERR_LOGGING=1
 for attempt in $(seq 1 60); do xrandr --current >/dev/null 2>&1 && break; sleep 2; done
 xrandr --current
 glxinfo -B

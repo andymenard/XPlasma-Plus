@@ -91,6 +91,7 @@ jobs:
           QT_LOGGING_RULES: 'kwin_core.debug=true;KWIN_UTILS.debug=true;org.kde.plasma.libtaskmanager.debug=true'
           DISPLAY: ':99'
           XDG_CURRENT_DESKTOP: KDE
+          XDG_MENU_PREFIX: plasma-
           XDG_DATA_HOME: /tmp/xp-live-home/.local/share
           XDG_CONFIG_HOME: /tmp/xp-live-home/.config
           XDG_CACHE_HOME: /tmp/xp-live-home/.cache
@@ -266,6 +267,7 @@ jobs:
           QT_LOGGING_RULES: 'kwin_core.debug=true;KWIN_UTILS.debug=true;org.kde.plasma.libtaskmanager.debug=true'
           DISPLAY: ':99'
           XDG_CURRENT_DESKTOP: KDE
+          XDG_MENU_PREFIX: plasma-
           XDG_DATA_HOME: /tmp/xp-live-home/.local/share
           XDG_CONFIG_HOME: /tmp/xp-live-home/.config
           XDG_CACHE_HOME: /tmp/xp-live-home/.cache
