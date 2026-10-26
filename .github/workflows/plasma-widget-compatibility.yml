@@ -226,7 +226,22 @@ jobs:
           else
             if [ -n "$XP_ARCHIVE_DATE" ]; then
               printf 'Server = https://archive.archlinux.org/repos/%s/$repo/os/$arch\n' "$XP_ARCHIVE_DATE" > /etc/pacman.d/mirrorlist
-              pacman -Syyuu --noconfirm --needed python git ca-certificates
+              case "$XP_EXPECTED_PLASMA" in
+                6.0|6.1|6.2|6.4)
+                  # As in archlinux/archlinux-repro: authenticate historical
+                  # packages at their snapshot date, retaining all signature
+                  # and owner-trust checks. Only this disposable CI keyring
+                  # uses historical time; the machine clock is unchanged.
+                  snapshot_epoch=$(date -u -d "$(printf '%s' "$XP_ARCHIVE_DATE" | tr / -) 23:59:59" +%s)
+                  mv /etc/pacman.d/gnupg /tmp/image-pacman-keyring
+                  install -d -m 700 /etc/pacman.d/gnupg
+                  printf 'faked-system-time %s\n' "$snapshot_epoch" > /etc/pacman.d/gnupg/gpg.conf
+                  pacman-key --init
+                  pacman-key --populate archlinux
+                  ;;
+              esac
+              pacman -Syy --noconfirm --needed archlinux-keyring
+              pacman -Suu --noconfirm --needed python git ca-certificates
             else
               pacman -Syu --noconfirm --needed python git ca-certificates
             fi
