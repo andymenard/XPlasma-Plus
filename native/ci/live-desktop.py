@@ -200,7 +200,10 @@ def main():
    # Exercise the stock service before recording its diagnostics: notification
    # history components are lazy and otherwise load for the first time only
    # during the later XP notification test.
-   run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaStockBaseline','0','dialog-information','Stock desktop baseline','Baseline notification before applying XP','[]','{}','1000'])
+   with (output/'stock-notification-interface.txt').open('w') as interface:
+    run(['gdbus','introspect','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications'],stdout=interface)
+   print((output/'stock-notification-interface.txt').read_text(),flush=True)
+   run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaStockBaseline','uint32 0','dialog-information','Stock desktop baseline','Baseline notification before applying XP','@as []','@a{sv} {}','int32 1000'])
    time.sleep(4)
    baseline={line for line in (output/'plasmashell.log').read_text().splitlines() if diagnostic(line)}
    (output/'stock-baseline-diagnostics.json').write_text(json.dumps(sorted(baseline),indent=2)+'\n')
@@ -244,7 +247,7 @@ def main():
    click_widget('fyi.hotsocket.xplasma.clock');time.sleep(2);snapshot(output,'clock-calendar')
    changed(output,'clock-before','clock-calendar',(780,100,1280,760))
    run(['xdotool','key','Escape']);time.sleep(1);snapshot(output,'notification-before')
-   run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaLiveTest','0','dialog-information','XPlasma live desktop test','Notification delivered by the real Plasma service','[]','{}','10000'])
+   run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaLiveTest','uint32 0','dialog-information','XPlasma live desktop test','Notification delivered by the real Plasma service','@as []','@a{sv} {}','int32 10000'])
    time.sleep(3);snapshot(output,'notification')
    changed(output,'notification-before','notification',(0,100,1280,760))
    Image.open(output/'notification.png').crop((780,350,1280,800)).save(output/'notification-detail.png')
