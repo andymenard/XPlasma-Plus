@@ -80,6 +80,14 @@ sudo sh -c 'nohup /usr/lib/Xorg :99 -ac -noreset -nolisten tcp vt7 > /tmp/xplasm
 export XDG_DATA_HOME="$HOME/.local/share" XDG_CONFIG_HOME="$HOME/.config" XDG_CACHE_HOME="$HOME/.cache"
 export DISPLAY=:99 XDG_RUNTIME_DIR=/tmp/xp-live-runtime XDG_CURRENT_DESKTOP=KDE XDG_MENU_PREFIX=plasma- KDE_SESSION_VERSION=6 LC_ALL=C.UTF-8 QT_FORCE_STDERR_LOGGING=1
 for attempt in $(seq 1 60); do xrandr --current >/dev/null 2>&1 && break; sleep 2; done
+# Xorg's modesetting driver starts this cloud image at 640x480 even when the
+# virtio device advertises a larger preferred size. Give the nested desktop
+# and the screenshot/input assertions the same complete 1280x800 viewport.
+connector=$(xrandr --query | awk '/ connected/{print $1; exit}')
+test -n "$connector"
+xrandr --newmode XPlasma1280x800 83.50 1280 1352 1480 1680 800 803 809 831 -HSync +VSync
+xrandr --addmode "$connector" XPlasma1280x800
+xrandr --output "$connector" --mode XPlasma1280x800
 xrandr --current
 glxinfo -B
 python3 /tmp/xp/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --prepare-session-only

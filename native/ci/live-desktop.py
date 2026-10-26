@@ -123,6 +123,8 @@ def snapshot(output,name):
  command=['import']
  if os.environ.get('XP_NESTED_KWIN')=='1':command+=['-display',':99']
  run([*command,'-window','root',output/(name+'.png')])
+ from PIL import Image
+ if Image.open(output/(name+'.png')).size!=(1280,800):raise RuntimeError('Desktop screenshot viewport must be 1280x800 for interaction checks')
 
 
 def layout(output,name):
