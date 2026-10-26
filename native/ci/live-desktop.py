@@ -171,6 +171,7 @@ def main():
  if a.nested_kwin:os.environ['XP_NESTED_KWIN']='1'
  home=Path.home();output=a.output.resolve();output.mkdir(parents=True,exist_ok=True)
  if not (home/'.xplasma-disposable-desktop').is_file():raise RuntimeError('Refusing a home not explicitly marked disposable')
+ for variable,relative in [('XDG_DATA_HOME','.local/share'),('XDG_CONFIG_HOME','.config'),('XDG_CACHE_HOME','.cache')]:os.environ[variable]=str(home/relative)
  if a.prepare_session_only:prepare_desktop_metadata(home);return
  cli=a.runtime.resolve()/'bin/xplasma'
  if a.public_release_assets:public_assets(home)

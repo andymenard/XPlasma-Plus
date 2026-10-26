@@ -77,6 +77,7 @@ chmod 700 /tmp/xp-live-runtime
 tar -xzf /tmp/runtime.tar.gz -C /tmp/xp
 touch "$HOME/.xplasma-disposable-desktop"
 sudo sh -c 'nohup /usr/lib/Xorg :99 -ac -noreset -nolisten tcp vt7 > /tmp/xplasma-xorg.log 2>&1 &'
+export XDG_DATA_HOME="$HOME/.local/share" XDG_CONFIG_HOME="$HOME/.config" XDG_CACHE_HOME="$HOME/.cache"
 export DISPLAY=:99 XDG_RUNTIME_DIR=/tmp/xp-live-runtime XDG_CURRENT_DESKTOP=KDE KDE_SESSION_VERSION=6 LC_ALL=C.UTF-8 QT_FORCE_STDERR_LOGGING=1
 for attempt in $(seq 1 60); do xrandr --current >/dev/null 2>&1 && break; sleep 2; done
 xrandr --current
