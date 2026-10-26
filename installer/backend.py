@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Transactional, feature-selectable portable KDE XP installer backend."""
-import argparse,configparser,hashlib,json,os,platform,re,shutil,subprocess,sys,tarfile,tempfile,traceback
+import argparse,configparser,fnmatch,hashlib,json,os,platform,re,shutil,subprocess,sys,tarfile,tempfile,traceback
 from pathlib import Path
 BASE=Path(__file__).resolve().parent
 sys.path.insert(0,str(BASE/'lib'))
@@ -181,9 +181,15 @@ class Snapshot:
   self.paths=tracked+new
   before=json.loads((self.state/'before.json').read_text())
   previous=json.loads((self.state/'after.json').read_text()) if (self.state/'after.json').is_file() else {}
-  # Existing installer output retains its original ownership. Newly tracked
-  # XP settings are also the installation's, rather than personal originals.
-  data={name:value for name,value in inventory(self.home,self.paths).items() if name not in before and name not in previous and not mentions_xplasma(self.home/name,name)}
+  # Existing installer output and namespaced generated looks remain owned.
+  # A user's unrelated file must not become owned just because its text happens
+  # to mention XPlasma. Preserve the existing rule for newly tracked XP settings.
+  def personal(name):
+   if any(name==kept or name.startswith(kept+'/') for kept in USER_CONTENT):return True
+   if any(fnmatch.fnmatchcase(name,pattern) or fnmatch.fnmatchcase(name,pattern+'/*') for pattern in GENERATED+CACHES):return False
+   already_tracked=any(name==root or name.startswith(root.rstrip('/')+'/') for root in tracked)
+   return already_tracked or not mentions_xplasma(self.home/name,name)
+  data={name:value for name,value in inventory(self.home,self.paths).items() if name not in before and name not in previous and personal(name)}
   for name in data:copy(self.home/name,self.state/'backup'/name)
   before.update(data)
   (self.state/'before.json').write_text(json.dumps(before,indent=2)+'\n')
