@@ -173,16 +173,17 @@ class Snapshot:
   (self.state/'gnome-after.json').write_text(json.dumps(gnome())+'\n')
   snapshot_retention(self.home,self.state,True)
  def extend(self,paths):
-  # An upgrade keeps the original snapshot. Paths a newer release tracks that
-  # it did not have no earlier state than today's, so that becomes theirs.
+  # Keep the original snapshot, adding newly tracked paths and personal files
+  # created between installations. Otherwise finish() would record those files
+  # as installer output, and Remove would delete them after the upgrade.
   tracked=json.loads((self.state/'tracked.json').read_text())
   new=[p for p in paths if p not in tracked]
   self.paths=tracked+new
-  if not new:return
   before=json.loads((self.state/'before.json').read_text())
-  # (Except what already names XPlasma's looks: that is the XP desktop's
-  # state, not the user's, and Remove clears it as the installation's.)
-  data={name:value for name,value in inventory(self.home,new).items() if name not in before and not mentions_xplasma(self.home/name,name)}
+  previous=json.loads((self.state/'after.json').read_text()) if (self.state/'after.json').is_file() else {}
+  # Existing installer output retains its original ownership. Newly tracked
+  # XP settings are also the installation's, rather than personal originals.
+  data={name:value for name,value in inventory(self.home,self.paths).items() if name not in before and name not in previous and not mentions_xplasma(self.home/name,name)}
   for name in data:copy(self.home/name,self.state/'backup'/name)
   before.update(data)
   (self.state/'before.json').write_text(json.dumps(before,indent=2)+'\n')

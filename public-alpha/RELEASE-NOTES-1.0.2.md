@@ -8,6 +8,7 @@ This update fixes installation and visual issues and expands the actual XP deskt
 - Refresh APT package indexes before resolving dependencies, report missing candidates and use system Python for privileged installation.
 - Install Quick Launch and notification-volume dependencies even when using a prebuilt runtime.
 - Fix the Start menu's Run Command action on Plasma 6.0, the old tray graphics import and recursive notification cleanup. Fix notification popup geometry loops on Plasma 6.7 and 6.8.
+- Preserve personal files added between installations when upgrading and later removing XP; keep the original pre-XP settings backup.
 - Add experimental Void/XBPS dependency support and a non-systemd theme/cursor watcher. Automatic display-manager management still requires systemd.
 
 ## Downloads
