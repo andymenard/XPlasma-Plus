@@ -102,6 +102,10 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
+          if [ "${XP_EXPECTED_PLASMA:-}" = 6.8 ]; then
+            python3 native/ci/live-desktop-vm.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+            exit 0
+          fi
           cat > /tmp/xp-live-session.sh <<'SH'
           #!/bin/sh
           export QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland
@@ -118,6 +122,7 @@ jobs:
           except OSError as error:
               if error.errno not in (errno.ENODATA,errno.ENOTSUP):raise
           PYCAP
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --prepare-session-only
           HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime kbuildsycoca6 --noincremental
           result=0
           HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?
@@ -244,6 +249,9 @@ jobs:
             dnf install -y xorg-x11-server-Xvfb openbox xterm ImageMagick xdotool python3-pillow dbus-x11 procps-ng gdb xorg-x11-server-Xwayland mesa-dri-drivers
           else
             pacman -S --needed --noconfirm xorg-server-xvfb openbox xterm imagemagick xdotool python-pillow glib2 dbus gdb xorg-xwayland mesa
+            if [ "$XP_EXPECTED_PLASMA" = 6.8 ]; then
+              pacman -S --needed --noconfirm qemu-desktop qemu-img openssh libisoburn edk2-ovmf
+            fi
           fi
       - name: Exercise a real Plasma desktop in a disposable home
         env:
@@ -266,6 +274,10 @@ jobs:
           xvfb_pid=$!
           trap 'kill "$xvfb_pid"' EXIT
           sleep 2
+          if [ "${XP_EXPECTED_PLASMA:-}" = 6.8 ]; then
+            python3 native/ci/live-desktop-vm.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results
+            exit 0
+          fi
           cat > /tmp/xp-live-session.sh <<'SH'
           #!/bin/sh
           export QT_QPA_PLATFORM=wayland XDG_SESSION_TYPE=wayland
@@ -282,6 +294,7 @@ jobs:
           except OSError as error:
               if error.errno not in (errno.ENODATA,errno.ENOTSUP):raise
           PYCAP
+          HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime python3 native/ci/live-desktop.py --runtime /tmp/xp/runtime --output /tmp/live-desktop-results --prepare-session-only
           HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime kbuildsycoca6 --noincremental
           result=0
           HOME=/tmp/xp-live-home XDG_RUNTIME_DIR=/tmp/xp-live-runtime dbus-run-session -- kwin_wayland --x11-display :99 --width 1280 --height 800 --xwayland --no-lockscreen --no-global-shortcuts --exit-with-session /tmp/xp-live-session.sh > /tmp/kwin-session.log 2>&1 || result=$?

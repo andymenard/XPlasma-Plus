@@ -16,6 +16,30 @@ def run(args,**kwargs):
  return subprocess.run(list(map(str,args)),check=True,text=True,**kwargs)
 
 
+def prepare_desktop_metadata(home):
+ # Older KWin compares desktop Exec paths literally. Preserve the distro's
+ # declared interfaces while resolving its own shell executable canonically.
+ import shlex
+ executable=Path(shutil.which('plasmashell')).resolve();found=False
+ for directory in ['/usr/share/applications','/etc/xdg/autostart','/usr/share/autostart']:
+  for source in Path(directory).glob('*plasmashell*.desktop'):
+   text=source.read_text();lines=text.splitlines();entry=next((l for l in lines if l.startswith('Exec=')),None)
+   interfaces=next((l for l in lines if l.startswith('X-KDE-Wayland-Interfaces=')),None)
+   print('Packaged shell metadata:',source,entry,interfaces,flush=True)
+   if not entry or not interfaces:continue
+   command=shlex.split(entry[5:]);resolved=shutil.which(command[0]) if command else None
+   if not resolved or Path(resolved).resolve()!=executable:continue
+   # System binary paths contain no whitespace; retain its original arguments.
+   replacement=re.sub(r'^Exec=(?:"[^"]*"|\S+)',lambda match:'Exec='+str(executable),entry,count=1)
+   target=home/'.local/share/applications'/source.name;target.parent.mkdir(parents=True,exist_ok=True)
+   target.write_text(text.replace(entry,replacement));found=True
+ if not found:raise RuntimeError('No packaged Plasma shell metadata declares its Wayland interfaces')
+
+
+def diagnostic(line):
+ return bool(re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line))
+
+
 def public_assets(home):
  # Reuse immutable data already distributed in the project's public release;
  # never include extracted Windows resources in source or test artifacts.
@@ -143,10 +167,11 @@ def runtime_backtrace(real,home,output):
 
 
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--public-release-assets',action='store_true');p.add_argument('--nested-kwin',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--public-release-assets',action='store_true');p.add_argument('--nested-kwin',action='store_true');p.add_argument('--prepare-session-only',action='store_true');a=p.parse_args()
  if a.nested_kwin:os.environ['XP_NESTED_KWIN']='1'
  home=Path.home();output=a.output.resolve();output.mkdir(parents=True,exist_ok=True)
  if not (home/'.xplasma-disposable-desktop').is_file():raise RuntimeError('Refusing a home not explicitly marked disposable')
+ if a.prepare_session_only:prepare_desktop_metadata(home);return
  cli=a.runtime.resolve()/'bin/xplasma'
  if a.public_release_assets:public_assets(home)
  else:fixture_explorer(home/'.local/share/xplasma/extracted/explorer.exe')
@@ -154,7 +179,7 @@ def main():
  # Preserve restarted shells' logs: production intentionally detaches them.
  wrappers=home/'bin';wrappers.mkdir(exist_ok=True);real=shutil.which('plasmashell')
  import shlex
- wrapper=wrappers/'plasmashell';wrapper.write_text('#!/bin/sh\nif [ "${1:-}" = --version ]; then exec '+shlex.quote(real)+' "$@"; fi\nexec '+shlex.quote(real)+' "$@" >> '+shlex.quote(str(output/'plasmashell.log'))+' 2>&1\n');wrapper.chmod(0o755)
+ wrapper=wrappers/'plasmashell';wrapper.write_text('#!/bin/sh\nif [ "${1:-}" = --version ]; then exec '+shlex.quote(real)+' "$@"; fi\nphase=stock\n[ ! -d '+shlex.quote(str(home/'.local/share/plasma/plasmoids/fyi.hotsocket.xplasma.start'))+' ] || phase=xp\nprintf "XPLASMA_SHELL_PHASE %s\\n" "$phase" >> '+shlex.quote(str(output/'plasmashell.log'))+'\nexec '+shlex.quote(real)+' "$@" >> '+shlex.quote(str(output/'plasmashell.log'))+' 2>&1\n');wrapper.chmod(0o755)
  os.environ['PATH']=str(wrappers)+':'+os.environ['PATH']
  processes=[]
  try:
@@ -168,6 +193,9 @@ def main():
      with (output/'startup-backtrace.log').open('w') as trace:
       subprocess.run(['timeout','30','gdb','--batch','-ex','run','-ex','thread apply all bt','--args',real,'--no-respawn'],stdout=trace,stderr=subprocess.STDOUT,check=False)
     raise
+   time.sleep(5)
+   baseline={line for line in (output/'plasmashell.log').read_text().splitlines() if diagnostic(line)}
+   (output/'stock-baseline-diagnostics.json').write_text(json.dumps(sorted(baseline),indent=2)+'\n')
    snapshot(output,'before')
    # Real desktop application path: this checks preflight, plugin selection,
    # patches, generated themes, layout changes and shell restarts together.
@@ -211,6 +239,8 @@ def main():
    run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaLiveTest','0','dialog-information','XPlasma live desktop test','Notification delivered by the real Plasma service','[]','{}','10000'])
    time.sleep(3);snapshot(output,'notification')
    changed(output,'notification-before','notification',(0,100,1280,760))
+   Image.open(output/'notification.png').crop((780,350,1280,800)).save(output/'notification-detail.png')
+   print('XPLASMA_NOTIFICATION_BASE64 '+base64.b64encode((output/'notification-detail.png').read_bytes()).decode(),flush=True)
    # Inspect the replacement plugins actually mapped by the running shell.
    for proc in Path('/proc').iterdir():
     if proc.name.isdigit():
@@ -226,12 +256,18 @@ def main():
     with (output/'switch-classic.log').open('w') as switch_log:
      run([cli,'apply','classic:Windows Standard',*args[3:]],stdout=switch_log,stderr=subprocess.STDOUT,timeout=240)
     wait_shell();time.sleep(3);snapshot(output,'switched-classic')
+   xp_log=(output/'plasmashell.log').read_text()
    with (output/'reset.log').open('w') as reset_log:run([cli,'reset'],stdout=reset_log,stderr=subprocess.STDOUT,timeout=240)
    wait_shell();time.sleep(5)
    if any(t.startswith('fyi.hotsocket.xplasma.') for t in layout(output,'reset')):raise RuntimeError('XP applets remained after reset')
    snapshot(output,'reset')
-  logs=(output/'plasmashell.log').read_text()
-  bad=[line for line in logs.splitlines() if re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line) and not line.startswith('file:///usr/share/plasma/') and re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I)]
+  bad=[];inherited=[];phase='stock'
+  for line in xp_log.splitlines():
+   if line.startswith('XPLASMA_SHELL_PHASE '):phase=line.split()[-1];continue
+   if phase!='xp' or not diagnostic(line):continue
+   if line in baseline:inherited.append(line);continue
+   if re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I):bad.append(line)
+  (output/'inherited-stock-diagnostics.json').write_text(json.dumps(inherited,indent=2)+'\n')
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
   (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','visible task button and window restoration','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
  except Exception as failure:
