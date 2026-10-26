@@ -164,13 +164,35 @@ jobs:
           /tmp/build/tests/app/test-startmenu
           /tmp/build/tests/style/test-style-geometry
   compiled-widgets:
-    name: XP plugins / Plasma ${{ matrix.plasma }}
+    name: XP desktop / Plasma ${{ matrix.plasma }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Official period images retain the signing keyrings for these
+          # frozen repositories; package signature verification stays enabled.
+          - plasma: '6.0'
+            image: archlinux:base-20240101.0.204074
+            family: pacman
+            release_only: '0'
+            archive_date: '2024/05/01'
+          - plasma: '6.1'
+            image: archlinux:base-20240714.0.246936
+            family: pacman
+            release_only: '0'
+            archive_date: '2024/07/15'
+          - plasma: '6.2'
+            image: archlinux:base-20241013.0.269705
+            family: pacman
+            release_only: '0'
+            archive_date: '2024/10/20'
+          - plasma: '6.4'
+            image: archlinux:base-20250727.0.390543
+            family: pacman
+            release_only: '0'
+            archive_date: '2025/08/01'
           - plasma: '6.5'
             image: archlinux:base-20260125.0.484595
             family: pacman
@@ -221,10 +243,15 @@ jobs:
               if args[0]=='dnf' and os.environ['XP_RELEASE_ONLY']=='1':args=[args[0],'--disablerepo=updates','--setopt=tsflags=noscripts',*args[1:]]
               subprocess.run(args,check=True)
           if family=='dnf':run(['dnf','install','-y','plasma-workspace'])
-          install(family,{'taskbar'},run)
-          from system_profile import detect,widget_target
+          packaged=os.environ['XP_EXPECTED_PLASMA'] in {'6.0','6.1','6.2','6.4'}
+          install(family,{'taskbar'},run,native_ready=packaged)
+          if packaged:
+              # These versions patch packaged QML; no KDE plugin build SDK is
+              # needed, but build the engine against their actual Qt libraries.
+              run(['pacman','-S','--needed','--noconfirm','base-devel','cmake','ninja','pkgconf','libarchive','zlib','xz','bzip2','qt6-base','qt6-declarative','qt6-wayland','qt6-svg','qt6-shadertools','libplasma','kwin'])
+          from system_profile import detect,widget_series
           profile=detect();print(profile,flush=True)
-          if widget_target(profile)!=os.environ['XP_EXPECTED_PLASMA']:
+          if widget_series(profile)!=os.environ['XP_EXPECTED_PLASMA']:
               raise RuntimeError('Container no longer supplies the expected Plasma ABI; update its snapshot before certifying this target.')
           PY
       - uses: actions/cache/restore@v4
@@ -235,9 +262,13 @@ jobs:
       - name: Build the engine against this host's Qt and KDE
         run: |
           cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/xp/runtime
-          cmake --build /tmp/build --parallel 3 --target xplasma-runtime
+          cmake --build /tmp/build --parallel 3 --target xplasma-runtime check-widget-patches
           cmake --install /tmp/build
+      - name: Check the actual packaged QML on older Plasma
+        if: matrix.plasma == '6.0' || matrix.plasma == '6.1' || matrix.plasma == '6.2' || matrix.plasma == '6.4'
+        run: python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmllint /usr/lib/qt6/bin/qmllint --installed-series "$XP_EXPECTED_PLASMA"
       - name: Build every required XP plugin and check public Qt ABI use
+        if: matrix.plasma == '6.5' || matrix.plasma == '6.6' || matrix.plasma == '6.7' || matrix.plasma == '6.8'
         run: |
           mkdir -p /tmp/xp/source
           ln -s "$GITHUB_WORKSPACE/native" /tmp/xp/source/xplasma
