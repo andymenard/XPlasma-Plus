@@ -448,7 +448,7 @@
     },
     {
      "find": "    fullRepresentation: FullRepresentation {\n",
-     "replace": "    fullRepresentation: FullRepresentation {\n        id: xpNotificationHistory\n        // Plasma 6.7 derives heading insets from popup padding, which in turn\n        // depends on the heading width. XP's flat history header needs no\n        // horizontal overhang; break that geometry feedback while XP is active.\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"leftInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"rightInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n"
+     "replace": "    fullRepresentation: FullRepresentation {\n        id: xpNotificationHistory\n        // Plasma derives heading insets from popup padding, which in turn\n        // depends on the heading width. XP's flat history header needs no\n        // horizontal overhang; break that geometry feedback while XP is active.\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"leftInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"rightInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n"
     }
    ],
    "extra/XpPopup.qml": [
@@ -641,6 +641,10 @@
     {
      "find": "    readonly property int effectiveStatus: historyModel.activeJobsCount > 0\n",
      "replace": "    // XPlasma: with XP's balloons, no icon of its own but Do Not Disturb's -- XP's\n    // tray had none; the balloons' icons and the copy dialog show the rest.\n    readonly property int effectiveStatus: Notifications.Globals.xpBalloons\n                     ? (Notifications.Globals.inhibited ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.PassiveStatus)\n                     : historyModel.activeJobsCount > 0\n"
+    },
+    {
+     "find": "    fullRepresentation: FullRepresentation {\n",
+     "replace": "    fullRepresentation: FullRepresentation {\n        id: xpNotificationHistory\n        // Plasma derives heading insets from popup padding, which in turn\n        // depends on the heading width. XP's flat history header needs no\n        // horizontal overhang; break that geometry feedback while XP is active.\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"leftInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n        Binding {\n            target: xpNotificationHistory.header\n            property: \"rightInset\"\n            value: 0\n            when: Notifications.Globals.xpBalloons\n        }\n"
     }
    ],
    "extra/XpPopup.qml": [
