@@ -81,6 +81,10 @@ def sync(suite, icons=None, wallpapers=None):
         shutil.copytree(prebuilts,suite/'prebuilt',dirs_exist_ok=True,symlinks=True)
     tests = ROOT / 'installer/tests'
     if tests.is_dir():
+        # Test modules removed from the source must not survive in an updated
+        # installer (for example, older unsupported-version expectations).
+        for old in (suite / 'tests').glob('test_*.py'):
+            if not (tests / old.name).is_file():old.unlink()
         shutil.copytree(tests, suite / 'tests', dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns('__pycache__'))
     # Always rebuild the native-source input: it embeds desktop patch rules.
