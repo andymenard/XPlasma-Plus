@@ -37,7 +37,7 @@ def prepare_desktop_metadata(home):
 
 
 def diagnostic(line):
- return bool(re.search(r'(TypeError|ReferenceError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line))
+ return bool(re.search(r'(TypeError|ReferenceError|RangeError|SyntaxError|is not a type|Error loading QML|module .* is not installed|Binding loop)',line))
 
 
 def public_assets(home):
@@ -264,6 +264,19 @@ def main():
    run(['xdotool','mousemove','80','708','click','1']);time.sleep(3);snapshot(output,'all-programs')
    changed(output,'start-menu','all-programs',(180,100,850,760))
    run(['xdotool','key','Escape','Escape']);time.sleep(1)
+   # Plasma 6.0 predates workspace.dbus. Exercise the menu's native
+   # KRunner bridge as well as loading its backend successfully.
+   snapshot(output,'runner-before')
+   click_widget('fyi.hotsocket.xplasma.start');time.sleep(1)
+   run(['xdotool','mousemove','260','668','click','1'])
+   for attempt in range(20):
+    owner=subprocess.check_output(['gdbus','call','--session','--dest','org.freedesktop.DBus','--object-path','/org/freedesktop/DBus','--method','org.freedesktop.DBus.NameHasOwner','org.kde.krunner'],text=True)
+    if owner.strip()=='(true,)':break
+    time.sleep(0.5)
+   else:raise RuntimeError('Run Command did not activate the KRunner service')
+   time.sleep(2);snapshot(output,'run-command')
+   changed(output,'runner-before','run-command',(0,0,1280,700))
+   run(['xdotool','key','Escape']);time.sleep(1)
    snapshot(output,'clock-before')
    click_widget('fyi.hotsocket.xplasma.clock');time.sleep(2);snapshot(output,'clock-calendar')
    changed(output,'clock-before','clock-calendar',(780,100,1280,760))
@@ -301,7 +314,7 @@ def main():
    if re.search(r'(xplasma|Xp[A-Z]|org.kde.plasma.(taskmanager|systemtray|notifications)|org.kde.panel)',line,re.I):bad.append(line)
   (output/'inherited-stock-diagnostics.json').write_text(json.dumps(inherited,indent=2)+'\n')
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
-  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','visible task button and window restoration','Start popup','All Programs flyout','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
+  (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','visible task button and window restoration','Start popup','All Programs flyout','Run Command activation','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
  except Exception as failure:
   for picture in ['applied.png','before.png']:
    file=output/picture

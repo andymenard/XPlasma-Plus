@@ -6,6 +6,9 @@
 #include <QPointer>
 #include <QDebug>
 #include <QMetaProperty>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusPendingCall>
 class ResizeGuard : public QObject {
     Q_OBJECT
     Q_PROPERTY(QWindow* window READ window WRITE setWindow NOTIFY windowChanged)
@@ -49,11 +52,26 @@ public:
 Q_SIGNALS:
     void windowChanged();
 };
+// KRunner's stable D-Bus entry point predates the workspace.dbus QML
+// module (absent in Plasma 6.0). Expose only this fixed action to the menu.
+class SessionActions : public QObject {
+    Q_OBJECT
+public:
+    using QObject::QObject;
+    Q_INVOKABLE void showRunner() {
+        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(
+            QStringLiteral("org.kde.krunner"), QStringLiteral("/App"),
+            QStringLiteral("org.kde.krunner.App"), QStringLiteral("display")));
+    }
+};
 class Plugin : public QQmlExtensionPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID QQmlExtensionInterface_iid)
 public:
-    void registerTypes(const char *uri) override {qmlRegisterType<ResizeGuard>(uri,1,0,"ResizeGuard");}
+    void registerTypes(const char *uri) override {
+        qmlRegisterType<ResizeGuard>(uri,1,0,"ResizeGuard");
+        qmlRegisterType<SessionActions>(uri,1,0,"SessionActions");
+    }
 };
 #include "plugin.moc"
 

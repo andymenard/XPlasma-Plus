@@ -85,7 +85,7 @@
    "alternatives": [
     {
      "find": "import QtQuick 2.2\n",
-     "replace": "import QtQuick 2.2\nimport QtQuick.Effects\n"
+     "replace": "import QtQuick\nimport QtQuick.Effects\n"
     }
    ]
   },
@@ -217,6 +217,11 @@
   }
  ],
  "notifications/global/Globals.qml": [
+  {
+   "find": "    onPlasmoidChanged: {\n        if (!plasmoid) {\n",
+   "replace": "    onPlasmoidChanged: {\n        if (!plasmoid && plasmoidItems.length > 0) {\n",
+   "optional": true
+  },
   {
    "find": "import org.kde.kirigami 2.11 as Kirigami\n",
    "replace": "import org.kde.kirigami 2.11 as Kirigami\nimport org.kde.ksvg as KSvg\n"
