@@ -266,8 +266,13 @@ def main():
    run(['xdotool','key','Escape','Escape']);time.sleep(1)
    # Plasma 6.0 predates workspace.dbus. Exercise the menu's native
    # KRunner bridge as well as loading its backend successfully.
+   # Explicitly dismiss the menus before reopening Start. Newer KWin can
+   # coalesce the two Escape events used to leave All Programs.
+   run(['xdotool','mousemove','1100','250','click','1']);time.sleep(1)
    snapshot(output,'runner-before')
-   click_widget('fyi.hotsocket.xplasma.start');time.sleep(1)
+   click_widget('fyi.hotsocket.xplasma.start');time.sleep(2)
+   snapshot(output,'runner-menu')
+   changed(output,'runner-before','runner-menu',(0,200,500,760))
    run(['xdotool','mousemove','260','700','click','1'])
    for attempt in range(20):
     owner=subprocess.check_output(['gdbus','call','--session','--dest','org.freedesktop.DBus','--object-path','/org/freedesktop/DBus','--method','org.freedesktop.DBus.NameHasOwner','org.kde.krunner'],text=True)
@@ -316,7 +321,9 @@ def main():
   if bad:raise RuntimeError('XP widget runtime errors:\n'+'\n'.join(bad))
   (output/'result.json').write_text(json.dumps({'status':'passed','coverage':['real Plasma shell','apply','repeat apply','XP widget layout','visible task button and window restoration','Start popup','All Programs flyout','Run Command activation','clock calendar popup','notification popup','reset'],'assets':'public v1.0.1 Luna/Classic' if a.public_release_assets else 'original geometric fixtures','limits':[('nested KWin Wayland on Xvfb' if a.nested_kwin else 'Xvfb and Openbox')+'; not a complete login/hardware certification','Desktop runtime apply/reset; not the full installer lifecycle']},indent=2)+'\n')
  except Exception as failure:
-  for picture in ['applied.png','before.png']:
+  try:snapshot(output,'failure-current')
+  except Exception:pass
+  for picture in ['failure-current.png','applied.png','before.png']:
    file=output/picture
    if file.exists() and file.stat().st_size<500000:
     print('XPLASMA_FAILURE_SCREENSHOT_BASE64 '+base64.b64encode(file.read_bytes()).decode(),flush=True)

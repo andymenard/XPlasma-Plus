@@ -9,6 +9,8 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 class ResizeGuard : public QObject {
     Q_OBJECT
     Q_PROPERTY(QWindow* window READ window WRITE setWindow NOTIFY windowChanged)
@@ -59,9 +61,16 @@ class SessionActions : public QObject {
 public:
     using QObject::QObject;
     Q_INVOKABLE void showRunner() {
-        QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(
-            QStringLiteral("org.kde.krunner"), QStringLiteral("/App"),
-            QStringLiteral("org.kde.krunner.App"), QStringLiteral("display")));
+        auto *call = new QDBusPendingCallWatcher(
+            QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(
+                QStringLiteral("org.kde.krunner"), QStringLiteral("/App"),
+                QStringLiteral("org.kde.krunner.App"), QStringLiteral("display"))), this);
+        connect(call, &QDBusPendingCallWatcher::finished, this, [](QDBusPendingCallWatcher *watcher) {
+            const QDBusPendingReply<> reply = *watcher;
+            if (reply.isError())
+                qWarning() << "XP Start menu: KRunner call failed:" << reply.error().message();
+            watcher->deleteLater();
+        });
     }
 };
 class Plugin : public QQmlExtensionPlugin {
