@@ -147,6 +147,22 @@ def changed(output,before,after,box):
  if not ImageChops.difference(a,b).getbbox():raise RuntimeError(after+' did not change the expected desktop region')
 
 
+def capture_shell_backtrace(output):
+ # Capture the process that handled the failed request before restarting it.
+ for process in Path('/proc').iterdir():
+  if not process.name.isdigit():continue
+  try:
+   if process.stat().st_uid!=os.geteuid() or (process/'comm').read_text().strip()!='plasmashell':continue
+  except (OSError,ProcessLookupError):continue
+  prefix=['sudo','-n'] if os.geteuid()!=0 and shutil.which('sudo') else []
+  with (output/'blocked-shell-backtrace.log').open('w') as trace:
+   try:
+    subprocess.run([*prefix,'gdb','--batch','-iex','set debuginfod enabled off','-p',process.name,'-ex','thread apply all bt'],env={**os.environ,'DEBUGINFOD_URLS':''},stdout=trace,stderr=subprocess.STDOUT,timeout=30,check=False)
+   except subprocess.TimeoutExpired:trace.write('Backtrace capture timed out\n')
+  return True
+ return False
+
+
 def runtime_backtrace(real,home,output):
  env=dict(os.environ);env['QT_PLUGIN_PATH']=str(home/'.local/lib/qt6/plugins')
  env['DEBUGINFOD_URLS']=''
@@ -201,7 +217,12 @@ def main():
    # history components are lazy and otherwise load for the first time only
    # during the later XP notification test.
    with (output/'stock-notification-interface.txt').open('w') as interface:
-    run(['gdbus','introspect','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications'],stdout=interface)
+    try:
+     # Metadata is diagnostic only. Avoid reading live properties (the default
+     # human-readable introspection does that); Notify below is the real test.
+     inspected=subprocess.run(['gdbus','introspect','--xml','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications'],stdout=interface,stderr=subprocess.STDOUT,text=True,timeout=10,check=False)
+     print('Notification interface inspection status:',inspected.returncode,flush=True)
+    except subprocess.TimeoutExpired:print('Notification interface inspection timed out; checking the actual Notify call next',flush=True)
    print((output/'stock-notification-interface.txt').read_text(),flush=True)
    run(['gdbus','call','--session','--dest','org.freedesktop.Notifications','--object-path','/org/freedesktop/Notifications','--method','org.freedesktop.Notifications.Notify','XPlasmaStockBaseline','uint32 0','dialog-information','Stock desktop baseline','Baseline notification before applying XP','@as []','@a{sv} {}','int32 1000'])
    time.sleep(4)
@@ -290,7 +311,7 @@ def main():
   for source in [home/'.config/plasma-org.kde.plasma.desktop-appletsrc',home/'.local/share/xplasma/state.json']:
    if source.is_file():shutil.copy2(source,output/('failed-'+source.name))
   if isinstance(failure,subprocess.CalledProcessError) and failure.cmd[0]=='gdbus' and shutil.which('gdb'):
-   runtime_backtrace(real,home,output)
+   if not capture_shell_backtrace(output):runtime_backtrace(real,home,output)
   for logfile in sorted(output.glob('*.log')):
    print('--- '+logfile.name+' ---',flush=True)
    print('\n'.join(logfile.read_text(errors='replace').splitlines()[-100:]),flush=True)
