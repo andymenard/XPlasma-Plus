@@ -268,7 +268,7 @@ def main():
    # KRunner bridge as well as loading its backend successfully.
    snapshot(output,'runner-before')
    click_widget('fyi.hotsocket.xplasma.start');time.sleep(1)
-   run(['xdotool','mousemove','260','668','click','1'])
+   run(['xdotool','mousemove','260','700','click','1'])
    for attempt in range(20):
     owner=subprocess.check_output(['gdbus','call','--session','--dest','org.freedesktop.DBus','--object-path','/org/freedesktop/DBus','--method','org.freedesktop.DBus.NameHasOwner','org.kde.krunner'],text=True)
     if owner.strip()=='(true,)':break
