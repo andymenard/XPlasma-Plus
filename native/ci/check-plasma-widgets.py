@@ -41,6 +41,22 @@ def installed_sources(manifest,series,data,cache):
   print('Packaged source:',source,spec['blob'],flush=True)
  return {'branches':{series:branch}}
 
+def lint_qml(tool,file,modern):
+ if modern:
+  subprocess.run([str(tool),'--ignore-settings','--max-warnings','-1',str(file)],check=True,stdout=subprocess.DEVNULL)
+  return
+ # Qt 6.6/6.7 lack --max-warnings. Their structured diagnostics distinguish
+ # parser failures (including warning-level syntax messages) from analysis
+ # warnings about the intentionally isolated file's missing sibling imports.
+ result=subprocess.run([str(tool),'--ignore-settings','--json','-',str(file)],capture_output=True,text=True)
+ report=json.loads(result.stdout)
+ files=report.get('files',[])
+ if result.returncode not in (0,255) or len(files)!=1 or Path(files[0]['filename']).resolve()!=file.resolve():
+  raise RuntimeError('Unexpected qmllint result: '+result.stderr+' '+result.stdout)
+ errors=[message for message in files[0].get('warnings',[]) if message.get('id')=='syntax' or message.get('type') not in {'debug','info','warning'}]
+ if errors or (result.returncode and not files[0].get('warnings')):
+  raise RuntimeError('QML parse failed: '+str(file)+' '+json.dumps(errors))
+
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--checker',type=Path,required=True)
@@ -61,13 +77,13 @@ def main():
    cache=a.cache;fetch_sources(json.loads(manifest.read_text()),cache)
   output=a.output or Path(temp)
   subprocess.run([str(a.checker),str(manifest),str(cache),str(output)],check=True)
+  modern=bool(a.qmllint and '--max-warnings' in subprocess.check_output([str(a.qmllint),'--help'],text=True))
   count=0
   for file in sorted(output.rglob('*.qml')):
    # qmllint verifies the input without rewriting it. Older qmlformat
    # versions corrupt comma declarations in for loops during write-out.
-   command=([str(a.qmllint),'--ignore-settings','--max-warnings','-1',str(file)] if a.qmllint
-            else [str(a.qmlformat),'--ignore-settings',str(file)])
-   subprocess.run(command,check=True,stdout=subprocess.DEVNULL)
+   if a.qmllint:lint_qml(a.qmllint,file,modern)
+   else:subprocess.run([str(a.qmlformat),'--ignore-settings',str(file)],check=True,stdout=subprocess.DEVNULL)
    count+=1
   print('Parsed',count,'patched QML files without syntax errors.',flush=True)
 
