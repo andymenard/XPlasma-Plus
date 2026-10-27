@@ -18,6 +18,16 @@ class GuiTests(unittest.TestCase):
   self.mock.stop()
   with patch.object(g,'capabilities',return_value={f['id']:('Unsupported series' if f['id']=='taskbar' else '') for f in g.FEATURES}):window=g.Installer(test_mode=True)
   window.select_all(True);self.assertNotIn('taskbar',window.selected());self.assertIn('Unsupported series',window.items['taskbar'].toolTip(0));window.close()
+ def test_unavailable_feature_shows_its_reason_when_selected(self):
+  self.mock.stop()
+  with patch.object(g,'capabilities',return_value={f['id']:('No splash option' if f['id']=='boot' else '') for f in g.FEATURES}):window=g.Installer(test_mode=True)
+  item=window.items['boot'];flags=item.flags()
+  self.assertTrue(flags&g.QtCore.Qt.ItemFlag.ItemIsEnabled);self.assertFalse(flags&g.QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+  self.assertIn('(unavailable)',item.text(0))
+  window.tree.setCurrentItem(item);self.assertIn('Unavailable: No splash option',window.description.text())
+  # Ticking its group leaves it out.
+  item.parent().setCheckState(0,g.QtCore.Qt.CheckState.Checked);self.assertNotIn('boot',window.selected())
+  self.assertIsNone(item.data(0,g.QtCore.Qt.ItemDataRole.CheckStateRole));window.close()
  def test_browser_can_be_selected_without_desktop(self):
   self.window.select_all(False);self.window.items['firefox'].setCheckState(0,g.QtCore.Qt.CheckState.Checked)
   self.assertEqual(set(self.window.selected()),{'firefox','firefox_default'});self.assertIn('No login or boot',self.window.summary.text())
