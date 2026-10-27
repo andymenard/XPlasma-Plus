@@ -89,9 +89,23 @@ def copy(source,dest):
   finally:
    if Path(name).exists():Path(name).unlink()
 def digest(p):
- if p.is_symlink():return {'kind':'link','value':os.readlink(p)}
- if p.is_file():return {'kind':'file','value':hashlib.sha256(p.read_bytes()).hexdigest()}
+ try:
+  if p.is_symlink():return {'kind':'link','value':os.readlink(p)}
+  if p.is_file():return {'kind':'file','value':hashlib.sha256(p.read_bytes()).hexdigest()}
+ except FileNotFoundError:pass # Live application files can disappear during inventory.
  return None
+def snapshot_copy(home,dest,data):
+ # Inventory and copying are separate: browsers can evict a cache entry or
+ # replace a profile file between them. Record only what was actually saved.
+ saved={}
+ for name in data:
+  source,target=home/name,dest/name
+  try:copy(source,target)
+  except FileNotFoundError:
+   if source.exists() or source.is_symlink():raise
+   continue
+  saved[name]=digest(target)
+ return saved
 def inventory(home,paths):
  result={}
  for name in paths:
@@ -158,7 +172,7 @@ class Snapshot:
   self.state.mkdir(parents=True,exist_ok=True);self.state.chmod(0o700)
   snapshot_retention(self.home,self.state,False)
   data=inventory(self.home,self.paths)
-  for name in data:copy(self.home/name,self.state/'backup'/name)
+  data=snapshot_copy(self.home,self.state/'backup',data)
   (self.state/'before.json').write_text(json.dumps(data,indent=2)+'\n')
   (self.state/'tracked.json').write_text(json.dumps(self.paths)+'\n')
   (self.state/'gnome-before.json').write_text(json.dumps(gnome())+'\n')
@@ -190,7 +204,7 @@ class Snapshot:
    already_tracked=any(name==root or name.startswith(root.rstrip('/')+'/') for root in tracked)
    return already_tracked or not mentions_xplasma(self.home/name,name)
   data={name:value for name,value in inventory(self.home,self.paths).items() if name not in before and name not in previous and personal(name)}
-  for name in data:copy(self.home/name,self.state/'backup'/name)
+  data=snapshot_copy(self.home,self.state/'backup',data)
   before.update(data)
   (self.state/'before.json').write_text(json.dumps(before,indent=2)+'\n')
   (self.state/'tracked.json').write_text(json.dumps(self.paths)+'\n')
