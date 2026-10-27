@@ -80,9 +80,13 @@ class Installer(QtWidgets.QMainWindow):
    item.setFlags(item.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable)
    reason=self.support[feature['id']]
    if reason:
-    item.setToolTip(0,feature_description(feature)+'\nUnavailable: '+reason);item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsEnabled)
-   checked=(feature['id'] in saved['features'] if saved else feature['default']) and not reason
-   item.setCheckState(0,QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
+    # Greyed but still selectable, so clicking it shows why below the list.
+    # With no check state, its group's Select all passes it by.
+    item.setText(0,feature['name']+' (unavailable)');item.setForeground(0,self.tree.palette().color(QtGui.QPalette.ColorGroup.Disabled,QtGui.QPalette.ColorRole.Text))
+    item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+   else:
+    checked=feature['id'] in saved['features'] if saved else feature['default']
+    item.setCheckState(0,QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
    self.items[feature['id']]=item
   self.lock_installed()
   if saved:self.theme.setCurrentText(saved['theme'])
@@ -133,7 +137,7 @@ class Installer(QtWidgets.QMainWindow):
   all_button.clicked.connect(lambda:self.select_all(True));none_button.clicked.connect(lambda:self.select_all(False));self.close_button.clicked.connect(self.close)
   self.tree.itemChanged.connect(self.component_changed);self.tree.currentItemChanged.connect(self.describe);self.theme.currentTextChanged.connect(self.update_summary)
   self.install.clicked.connect(lambda:self.start('install'));self.remove.clicked.connect(lambda:self.start('uninstall'));self.rebuild.clicked.connect(lambda:self.start('rebuild'))
-  self.status.setText(self.profile['name']+' — Plasma '+'.'.join(map(str,self.profile['plasma']))+' — '+self.profile['arch']+'. Unavailable features are disabled.')
+  self.status.setText(self.profile['name']+' — Plasma '+'.'.join(map(str,self.profile['plasma']))+' — '+self.profile['arch']+'. Unavailable features are greyed out; select one to see why.')
   self.set_step(0);self.update_summary()
  def lock_installed(self):
   installed=STATE/'installation.json'
@@ -178,7 +182,7 @@ class Installer(QtWidgets.QMainWindow):
  def selected(self):return [name for name,item in self.items.items() if item.checkState(0)==QtCore.Qt.CheckState.Checked and not self.support[name]]
  def select_all(self,checked):
   for name,item in self.items.items():
-   if name not in self.locked:item.setCheckState(0,QtCore.Qt.CheckState.Checked if checked and not self.support[name] else QtCore.Qt.CheckState.Unchecked)
+   if name not in self.locked and not self.support[name]:item.setCheckState(0,QtCore.Qt.CheckState.Checked if checked else QtCore.Qt.CheckState.Unchecked)
  def describe(self,item,previous=None):
   if item:self.description.setText(item.toolTip(0))
  def update_summary(self,*unused):

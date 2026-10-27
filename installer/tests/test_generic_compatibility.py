@@ -24,6 +24,10 @@ class Compatibility(unittest.TestCase):
   self.assertIsNone(profile.widget_target(BASE))
   self.assertEqual(profile.widget_series(BASE),'6.3')
   self.assertTrue(support['lock']);self.assertTrue(support['caption_animation'])
+ def test_boot_splash_names_the_missing_requirement(self):
+  self.assertEqual(self.support()['boot'],'')
+  self.assertIn('neither was found',self.support(boot=None)['boot'])
+  self.assertIn('no splash or rhgb',self.support(splash=False)['boot'])
  def test_recipe_floors_and_prereleases(self):
   self.assertEqual(profile.widget_target({**BASE,'plasma':(6,7,91),'qt':(6,11,0)}),'6.8')
   self.assertIsNone(profile.widget_target({**BASE,'plasma':(6,8,0),'qt':(6,10,0)}))
