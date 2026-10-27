@@ -5,7 +5,7 @@
 1. Back up your personal files and desktop/system configuration. Save your work.
 2. Open **System Settings → About this System** (the location/name can vary), or run `plasmashell --version` in a terminal.
 3. Check your distribution release and architecture. `uname -m` reports `x86_64` for Intel/AMD 64-bit or `aarch64` for ARM64.
-4. Choose an installer from the [1.0.2 release](https://github.com/andymenard/XPlasma-Plus/releases/tag/v1.0.2).
+4. Choose an installer from the [1.0.3 release](https://github.com/andymenard/XPlasma-Plus/releases/tag/v1.0.3).
 
 ## Available installers
 
