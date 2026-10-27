@@ -57,6 +57,7 @@ class Dependencies(unittest.TestCase):
    return args[-1]+':\n  Candidate: 1.0\n'
   with patch.object(deps.subprocess,'check_output',side_effect=policy):deps.install('apt',{'firefox'},commands.append)
   self.assertIn('libgtk-3-0t64',commands[1]);self.assertEqual(commands[1][:3],['apt-get','install','--assume-yes'])
+  self.assertIn('libxt6t64',commands[1])
  def test_apt_unavailable_package_is_named_before_install(self):
   commands=[]
   def policy(args,**kwargs):return '  Candidate: '+('(none)' if args[-1]=='fontconfig' else '1.0')+'\n'
@@ -68,5 +69,6 @@ class Dependencies(unittest.TestCase):
   def policy(args,**kwargs):return '  Candidate: '+('(none)' if args[-1].endswith('t64') else '1.0')+'\n'
   with patch.object(deps.subprocess,'check_output',side_effect=policy):deps.install('apt',{'firefox'},commands.append)
   self.assertIn('libgtk-3-0',commands[1]);self.assertNotIn('libgtk-3-0t64',commands[1])
+  self.assertIn('libxt6',commands[1]);self.assertNotIn('libxt6t64',commands[1])
 
 if __name__=='__main__':unittest.main()
