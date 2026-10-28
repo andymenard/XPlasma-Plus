@@ -8,7 +8,7 @@
             }
             return null;
         }
-        readonly property bool xpCrisp: !!xpStyle && xpStyle.crispEnabled && xpStyle.supports(Kirigami.Theme.defaultFont.family)
+        readonly property bool xpCrisp: !!xpStyle && xpStyle.pixelActive(Kirigami.Theme.defaultFont.family, Kirigami.Theme.defaultFont.pointSize * 96 / 72, Math.max(1, Screen.devicePixelRatio))
         readonly property font xpFont: xpCrisp ? xpStyle.font(Kirigami.Theme.defaultFont.family, Kirigami.Theme.defaultFont.pointSize,
                                                               Math.max(1, Screen.devicePixelRatio))
                                                : Kirigami.Theme.defaultFont

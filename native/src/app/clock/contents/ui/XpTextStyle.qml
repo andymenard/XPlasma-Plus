@@ -14,21 +14,32 @@ Item {
         return families.indexOf("XPlasma Tahoma Pixel") >= 0
             && (family === "Tahoma" || family === "Tahoma OS" || family === "MS Sans Serif" || family.indexOf("XPlasma Tahoma Pixel") === 0);
     }
-    function physical(pixels, dpr) { return Math.max(1, Math.round(Math.max(1, Math.round(pixels)) * dpr)); }
-    function family(original, pixels, dpr) {
-        const normal = original === "Tahoma" && families.indexOf("Tahoma OS") >= 0 ? "Tahoma OS" : original;
-        if (!crispEnabled || !supports(original)) return normal;
-        const optical = "XPlasma Tahoma Pixel " + physical(pixels, dpr);
-        return families.indexOf(optical) >= 0 ? optical : "XPlasma Tahoma Pixel";
+    function standardScale(dpr) {
+        return isFinite(dpr) && dpr >= 1 && dpr <= 3
+            && Math.abs(dpr * 4 - Math.round(dpr * 4)) < 0.0001;
     }
-    // XpText's font, for controls that draw their own text (fields, areas).
+    function physical(pixels, dpr) { return Math.max(1, Math.round(Math.max(1, Math.round(pixels)) * dpr)); }
+    function pixelFamily(pixels, dpr) {
+        const size = physical(pixels, dpr);
+        return size === 11 ? "XPlasma Tahoma Pixel" : "XPlasma Tahoma Pixel " + size;
+    }
+    function pixelActive(original, pixels, dpr) {
+        return crispEnabled && supports(original) && standardScale(dpr)
+            && families.indexOf(pixelFamily(pixels, dpr)) >= 0;
+    }
+    function family(original, pixels, dpr) {
+        if (pixelActive(original, pixels, dpr)) return pixelFamily(pixels, dpr);
+        if (crispEnabled && supports(original)) return "Tahoma";
+        return original === "Tahoma" && families.indexOf("Tahoma OS") >= 0 ? "Tahoma OS" : original;
+    }
+    // Share selection with labels, input fields and text areas.
     function font(original, points, dpr) {
         const pixels = points * 96 / 72;
-        const active = crispEnabled && supports(original);
+        const active = pixelActive(original, pixels, dpr);
         return Qt.font({family: family(original, pixels, dpr),
                         pointSize: active ? physical(pixels, dpr) / dpr * 72 / 96 : points,
                         kerning: !active,
-                        hintingPreference: active ? Font.PreferFullHinting : Font.PreferDefaultHinting});
+                        hintingPreference: crispEnabled && supports(original) ? Font.PreferFullHinting : Font.PreferDefaultHinting});
     }
     function read() { debounce.restart(); }
     Component.onCompleted: read()

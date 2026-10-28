@@ -36,18 +36,21 @@ Integer multiples reproduce uniform blocks; fractional scales distribute the
 widths/heights over neighboring integer pixel sizes. This preserves hard edges
 and Tahoma's captured proportions, but some blocks must be unequal at fractional
 scales. At normal size, the source is XP's real rendering rather than a Linux
-approximation. Larger font settings scale this 11-pixel design.
+approximation. Unsupported sizes and intermediate display scales use vector
+Tahoma instead of stretching the captured face.
 
 The generator and capture code are GPL-3.0-or-later. Tahoma's source letterforms
 are Microsoft assets; the code license does not relicense those letterforms.
-Generated font assets are kept separately from source in `private-assets`, with
-Microsoft attribution and capture provenance. Existing legacy pixel-font credits
+Generated font assets are packaged under `non-free/payload/assets/fonts`, with
+Microsoft attribution and capture provenance. Raw captures remain private. Existing legacy pixel-font credits
 remain in the parent CREDITS.md.
 
 ## Optical designs for fractional scales
 
-`optimize.py` creates separate regular/bold families at 14, 17, 19, 25 and
-28 physical pixels (normal UI text at 125%, 150%, 175%, 225% and 250%).
+`optimize.py` creates separate regular/bold families at 14, 17, 19, 22, 25,
+28, 30 and 33 physical pixels. Together with the captured 11px face, these
+cover the standard 11px UI size at 100%, 125%, 150%, 175%, 200%, 225%,
+250%, 275% and 300%. The 22px and 33px designs are exact integer enlargements.
 These are adaptations of the XP capture, not claimed to be original XP
 rendering at those sizes. A constrained integer-grid design balances repeated
 long stems and assigns most rounding adjustments to counters and spacing.
@@ -56,12 +59,14 @@ one pixel wide/high, preserving openings and connectivity. Complex glyphs
 can relax a stem constraint to keep the full glyph within its target bounds;
 per-face JSON reports record the counts.
 
-Qt and IE6 select a matching optical family automatically by physical size;
-other sizes fall back to the faithful captured face. Integer scales retain
-that faithful face. The fonts have no grayscale edges, but fractional designs
+Qt, Plasma text helpers and IE6 select a matching optical family by physical
+size at these quarter-step scales. Between target scales, or when the matching
+face is unavailable, they use scalable Tahoma. Explicit document/code fonts
+remain unchanged. Firefox selection accounts for layout-unit rounding: 275%
+can expose a CSS-to-device ratio of 60/22, rather than exactly 2.75. The fonts have no grayscale edges, but fractional designs
 remain optical compromises rather than perfectly uniform magnifications.
 
 ```
-python optimize.py regular.xpg xplasma-tahoma-pixel-28.ttf --size 28
-python optimize.py bold.xpg xplasma-tahoma-pixel-28-bold.ttf --size 28
+python optimize.py regular.xpg xplasma-tahoma-pixel-30.ttf --size 30
+python optimize.py bold.xpg xplasma-tahoma-pixel-30-bold.ttf --size 30
 ```
