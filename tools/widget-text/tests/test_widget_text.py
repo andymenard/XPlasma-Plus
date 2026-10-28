@@ -14,6 +14,10 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = QtGui.QGuiApplication.instance() or QtGui.QGuiApplication([])
+# Load the repository's faces so the test does not depend on a user's install.
+for font in (ROOT.parents[1]/'non-free/payload/assets/fonts').glob('xplasma-tahoma-pixel*.ttf'):
+    if QtGui.QFontDatabase.addApplicationFont(str(font)) < 0:
+        raise RuntimeError(f'Could not load fixture font: {font}')
 
 class WidgetTextTest(unittest.TestCase):
     def test_packaged_helpers_match(self):
@@ -56,14 +60,21 @@ class WidgetTextTest(unittest.TestCase):
             wait_for(False)
             write(True)
             wait_for(True)
-            for dpr, physical in [(1.25,14),(1.5,17),(1.75,19),(2,22),(2.25,25),(2.5,28)]:
+            for dpr, physical in [(1,11),(1.25,14),(1.5,17),(1.75,19),(2,22),(2.25,25),(2.5,28),(2.75,30),(3,33)]:
                 label.setProperty('xpDpr',dpr)
                 font = label.property('font')
-                expected = f'XPlasma Tahoma Pixel {physical}' if physical != 22 else 'XPlasma Tahoma Pixel'
+                expected = f'XPlasma Tahoma Pixel {physical}' if physical != 11 else 'XPlasma Tahoma Pixel'
                 self.assertEqual(font.family(),expected)
                 self.assertAlmostEqual(font.pointSizeF()*96/72*dpr,physical,places=4)
                 self.assertEqual(font.weight(),QtGui.QFont.Weight.Bold)
                 self.assertFalse(label.property('antialiasing'))
+            for dpr in (1.1, 1.3, 1.8, 2.1, 2.625, 2.8, 3.25):
+                label.setProperty('xpDpr',dpr)
+                self.assertFalse(label.property('xpActive'))
+                self.assertEqual(label.property('font').family(),'Tahoma')
+                self.assertAlmostEqual(label.property('font').pointSizeF(),11*72/96)
+                self.assertTrue(label.property('antialiasing'))
+            label.setProperty('xpDpr',2.75)
             label.setProperty('xpFamily','Trebuchet MS')
             self.assertFalse(label.property('xpActive'))
             self.assertEqual(label.property('font').family(),'Trebuchet MS')

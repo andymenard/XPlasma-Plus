@@ -34,6 +34,15 @@ class OpticalDesignTests(unittest.TestCase):
     self.assertTrue(all(mapping[n+1]>mapping[n] for n in range(min(mapping),max(mapping))))
    output,_=optimize_record(source,size);ink=cells(output)
    self.assertNotIn((output[2]+output[0]//2,output[3]-1-output[1]//2),ink)
+ def test_integer_scales_are_exact_enlargements(self):
+  source=record(['#.##','#..#','####'],left=-1,top=2,advance=5)
+  for size in (22,33):
+   factor=size//11
+   output,_=optimize_record(source,size)
+   expected={(x*factor+dx,y*factor+dy) for x,y in cells(source) for dx in range(factor) for dy in range(factor)}
+   self.assertEqual(cells(output),expected)
+   self.assertEqual(output[4],source[4]*factor)
+
  def test_empty_space_keeps_spacing_without_ink(self):
   for size in SIZES:
    output,stats=optimize_record((1,1,0,0,3,b''),size)

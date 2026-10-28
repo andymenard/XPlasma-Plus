@@ -10,7 +10,7 @@ baselines, source advance widths, and glyph topology remain constrained.
 import argparse,json,math
 from pathlib import Path
 from build import read_capture,build_font
-SIZES=(14,17,19,25,28)
+SIZES=(14,17,19,22,25,28,30,33)
 def rounded(value):return math.floor(value+.5)
 def cells(record):
  w,h,left,top,advance,bitmap=record;stride=((w+31)//32)*4

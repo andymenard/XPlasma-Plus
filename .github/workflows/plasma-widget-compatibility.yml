@@ -54,7 +54,7 @@ jobs:
       - name: Build the production patch checker and native regressions
         run: |
           cmake -S native -B /tmp/build -G Ninja -DQT_MAJOR=6 -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/build --parallel 3 --target check-widget-patches test-app test-style-geometry test-startmenu
+          cmake --build /tmp/build --parallel 3 --target check-widget-patches test-app test-style-geometry test-startmenu test-crispfont test-crisp-script-policy
       - name: Verify XP behavior and QML syntax on every branch
         run: python3 native/ci/check-plasma-widgets.py --checker /tmp/build/tests/app/check-widget-patches --qmlformat /usr/lib64/qt6/bin/qmlformat
       - name: Run core presentation regressions
@@ -62,6 +62,8 @@ jobs:
           /tmp/build/tests/app/test-app strictPatchVariants applyRefusesPartialLook
           /tmp/build/tests/style/test-style-geometry
           /tmp/build/tests/app/test-startmenu
+          /tmp/build/test-crispfont
+          /tmp/build/tests/app/test-crisp-script-policy
   debian-trixie:
     runs-on: ubuntu-24.04
     container: debian:trixie

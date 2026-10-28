@@ -16,7 +16,7 @@ bool apply(Session &session,bool enabled,QString *error) {
   // Optical pixel faces need the same hard-edge rules in GTK and Firefox.
   const QByteArray rule=xml.mid(xml.indexOf("<match target=\"font\"><test name=\"family\" compare=\"eq\"><string>XPlasma Tahoma Pixel"));
   const QByteArray optical=rule.left(rule.indexOf("</match>")+8);
-  for(int size : {14,17,19,25,28}) {
+  for(int size : {14,17,19,22,25,28,30,33}) {
    QByteArray match=optical;QByteArray family("XPlasma Tahoma Pixel ");family+=QByteArray::number(size);family+="</string>";
    match.replace("XPlasma Tahoma Pixel</string>",family);match+="</fontconfig>";
    xml.replace("</fontconfig>",match);

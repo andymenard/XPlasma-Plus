@@ -19,8 +19,9 @@ Text {
     }
     property real xpDpr: Math.max(1, Screen.devicePixelRatio)
     readonly property real xpBasePixels: xpPoints > 0 ? xpPoints * 96 / 72 : xpPixels
-    readonly property bool xpActive: !!xpStyle && xpStyle.crispEnabled && xpStyle.supports(xpFamily)
-    font.family: xpStyle ? xpStyle.family(xpFamily, xpBasePixels, xpDpr) : xpFamily
+    readonly property bool xpActive: !!xpStyle && xpStyle.pixelActive(xpFamily, xpBasePixels, xpDpr) && !xpItalic
+    font.family: xpItalic && xpStyle && xpStyle.crispEnabled && xpStyle.supports(xpFamily) ? "Tahoma"
+                 : xpStyle ? xpStyle.family(xpFamily, xpBasePixels, xpDpr) : xpFamily
     font.pointSize: xpActive ? xpStyle.physical(xpBasePixels, xpDpr) / xpDpr * 72 / 96
                             : (xpPoints > 0 ? xpPoints : xpPixels * 72 / 96)
     font.weight: xpBold ? Font.Bold : xpWeight
