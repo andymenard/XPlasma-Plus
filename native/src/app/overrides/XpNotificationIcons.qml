@@ -60,7 +60,8 @@ Grid {
         const desktop = simple(entry.desktopEntry);
         for (let row = 0; row < trayModel.rowCount(); ++row) {
             const index = trayModel.index(row, 0);
-            const id = simple(trayModel.data(index, Qt.UserRole + 2));
+            // (an Electron app's item is "<name>_status_icon_<n>": the app's name)
+            const id = simple(trayModel.data(index, Qt.UserRole + 2)).replace(/statusicon\d*$/, "");
             const title = simple(trayModel.data(index, Qt.DisplayRole));
             if (id === "orgkdeplasmanotifications")
                 continue;
