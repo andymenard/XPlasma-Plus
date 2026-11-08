@@ -91,7 +91,7 @@
   {
     "id": "caption_animation",
     "name": "XP minimize and maximize animation",
-    "description": "Builds the classic caption animation for this computer (Plasma 6.6/6.7). Log out/in after installation. Credits aubymori.",
+    "description": "Builds the classic caption animation for this computer (Plasma 6.6–6.8). Log out/in after installation. Credits aubymori.",
     "default": true,
     "native": false,
     "project": "desktop"

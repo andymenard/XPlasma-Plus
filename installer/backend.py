@@ -11,6 +11,11 @@ STATE_NAME='kde-xp-suite'
 FEATURES=json.loads((BASE/'features.json').read_text())
 KNOWN={f['id'] for f in FEATURES}
 NATIVE={f['id'] for f in FEATURES if f['native']}
+# An upgrade or rebuild never forces a feature on a system that can't take it
+# (after a Plasma update, say): it is held, kept as installed but switched
+# off, until a release supports it. Native features share one build, so
+# they can't be held apart from it.
+HOLDABLE=KNOWN-NATIVE
 LOOK={'desktop','apps','taskbar','fonts','icons','sounds','wallpaper'}
 THEMES={'Luna Blue':('Luna/luna.msstyles','NormalColor'),'Luna Silver':('Luna/luna.msstyles','Metallic'),
  'Luna Olive Green':('Luna/luna.msstyles','HomeStead'),'Royale':('Royale/Royale.msstyles','NormalColor'),
@@ -505,7 +510,25 @@ def desktop_updates(home,state,selected,asset_options=None):
     run(['systemctl','--user','daemon-reload']);run(['systemctl','--user','enable','--now','xp-cursor-sync.path'])
    else:session_watch(home,state)
   else:log('Existing shared cursor fallback preserved; no application override was installed.')
- if 'caption_animation' in selected:caption_animation(home)
+
+def unavailable(names):
+ # Why each of these can't be installed on this system now (left out if it can).
+ if not names:return {}
+ support=capabilities(detect(),FEATURES);return {n:support[n] for n in names if support.get(n)}
+def suspend(home,feature):
+ # Held: what it installed stays, so Remove still restores it, but is off.
+ if feature=='caption_animation':
+  # (Built for another KWin, it can't load: Plasma's own animations instead.)
+  config('kwinrc','Plugins','xp-caption-animationEnabled','false')
+  for effect in ['maximize','squash']:config('kwinrc','Plugins',effect+'Enabled','true')
+def hold(home,held,feature,reason):
+ held[feature]=reason;suspend(home,feature)
+ log('Held, not upgraded: '+feature+' — '+reason+' It stays installed but switched off; a later release can bring it back. Everything else continues.')
+def optional_caption(home,held):
+ # Optional and built for this KWin: a failed build holds it, not everything.
+ try:caption_animation(home)
+ except Exception as error:hold(home,held,'caption_animation','It could not be built for this KWin ('+str(error)+').')
+ else:held.pop('caption_animation',None)
 
 def caption_animation(home):
  # XP's caption animation, built for this KWin (or the verified build for it).
@@ -651,10 +674,13 @@ def install(selected,theme,asset_options=None):
  if retired:log('No longer part of the installer, so not carried over: '+', '.join(sorted(retired))+'.')
  installed-=retired
  upgrade=previous is not None
+ held={}
  selected=validate_selection(selected,theme);phase('Checking system and package');preflight(selected,installed);verify()
  if upgrade:
   # An upgrade adds to an installation; it can't take features away.
-  dropped=installed-selected
+  # (Except one this system can't take any more: that one is held.)
+  missing=unavailable((installed-selected)&HOLDABLE)
+  dropped=installed-selected-set(missing)
   if dropped:raise RuntimeError('An upgrade keeps the installed features. Use Remove installed features first to drop: '+', '.join(sorted(dropped))+'.')
   # Dark mode is a Properties setting after installation: keep today's.
   try:asset_options['dark_mode']=json.loads((home/'.local/share/xplasma/state.json').read_text()).get('settings',{}).get('darkMode',asset_options.get('dark_mode',False))
@@ -713,6 +739,9 @@ def install(selected,theme,asset_options=None):
   if 'behavior' in selected:phase('Applying window and alert behavior');behavior(home,state,upgrade)
   if 'session' in selected:phase('Installing persistent XP session menus');session(home,state)
   desktop_updates(home,state,selected,asset_options)
+  if upgrade:
+   for feature,reason in sorted(missing.items()):hold(home,held,feature,reason)
+  if 'caption_animation' in selected:phase('Preparing the XP caption animation');optional_caption(home,held)
   if 'user_pictures' in selected:phase('Installing XP user account pictures');user_pictures(home)
   if 'lock' in selected:phase('Installing XP lock screen');lock_screen(home,state,'lock' in installed)
   if 'firefox' in selected:phase('Installing IE6-style Firefox ESR');firefox(home)
@@ -729,7 +758,8 @@ def install(selected,theme,asset_options=None):
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
   snapshot.finish()
   edition=json.loads((BASE/'edition.json').read_text()) if (BASE/'edition.json').is_file() else None
-  result={'version':4,'edition':edition,'features':sorted(selected),'theme':theme,'asset_options':asset_options}
+  result={'version':4,'edition':edition,'features':sorted(selected|set(held)),'theme':theme,'asset_options':asset_options}
+  if held:result['held']=held
   if upgrade:
    result['installed_edition']=previous.get('installed_edition',previous.get('edition'))
    result['upgrades']=previous.get('upgrades',[])+[{'from':previous.get('edition'),'to':edition}]
@@ -773,6 +803,8 @@ def rebuild():
  previous=json.loads(record.read_text())
  selected=set(previous['features'])&KNOWN
  if not selected&NATIVE:raise RuntimeError('This installation has no desktop components to rebuild.')
+ held=dict(previous.get('held') or {})
+ missing=unavailable(selected&{'caption_animation'})
  lost=plasma_update.status(home,BASE)
  if lost and not lost['available']:raise RuntimeError('This installer has no Plasma '+lost['series']+' sources. Download the latest release to rebuild for Plasma '+lost['plasma']+'.')
  phase('Checking system and package');verify()
@@ -781,15 +813,18 @@ def rebuild():
  except (OSError,ValueError):pass
  log('Rebuilding the desktop components'+(' for Plasma '+lost['plasma'] if lost else '')+'; your theme and settings are kept.')
  phase('Preparing Linux dependencies — authentication may be requested')
- if detect()['family']:root('dependencies',selected&(NATIVE|{'caption_animation'}))
+ if detect()['family']:root('dependencies',(selected-set(missing))&(NATIVE|{'caption_animation'}))
  # (What a failed rebuild goes back to.)
  rollback=state/'upgrade'
  if rollback.exists():shutil.rmtree(rollback)
  undo=Snapshot(home,rollback,tracked_paths(home));undo.save()
  try:
   prepare_native(home,state,selected,previous['theme'],asset_options,keep_theme=True)
-  if 'caption_animation' in selected:phase('Rebuilding the XP caption animation');caption_animation(home)
+  for feature,reason in missing.items():hold(home,held,feature,reason)
+  if 'caption_animation' in selected and not missing:phase('Rebuilding the XP caption animation');optional_caption(home,held)
   if 'taskbar' in selected:phase('Checking the XP taskbar');verify_taskbar()
+  if held:previous['held']=held
+  else:previous.pop('held',None)
   previous['rebuilds']=previous.get('rebuilds',[])+[{'plasma':'.'.join(map(str,detect().get('plasma',()))),'edition':previous.get('edition')}]
   record.write_text(json.dumps(previous,indent=2)+'\n')
   shutil.rmtree(rollback,ignore_errors=True)

@@ -24,6 +24,21 @@ class Compatibility(unittest.TestCase):
   self.assertIsNone(profile.widget_target(BASE))
   self.assertEqual(profile.widget_series(BASE),'6.3')
   self.assertTrue(support['lock']);self.assertTrue(support['caption_animation'])
+ def test_caption_animation_is_offered_only_for_a_ported_kwin(self):
+  with patch.object(profile,'widget_target',return_value='6.8'):
+   self.assertEqual(self.support(plasma=(6,8,2))['caption_animation'],'')
+  with patch.object(profile,'widget_target',return_value='6.8'),patch.object(profile,'CAPTION_KWIN_SERIES',('6.6','6.7')):
+   self.assertIn('not been ported to KWin 6.8',self.support(plasma=(6,8,2))['caption_animation'])
+ def test_caption_series_matches_its_source(self):
+  # The feature list, the build script and CMake agree on the KWin series.
+  source=ROOT.parent/'effects/xp-caption-animation'
+  import re
+  builder=re.search(r"SUPPORTED_KWIN=\(([^)]*)\)",(source/'build-local.py').read_text()).group(1)
+  self.assertEqual(tuple(re.findall(r"'([\d.]+)'",builder)),profile.CAPTION_KWIN_SERIES)
+  cmake=(source/'CMakeLists.txt').read_text()
+  self.assertIn('VERSION_LESS "'+profile.CAPTION_KWIN_SERIES[0]+'"',cmake)
+  last=profile.CAPTION_KWIN_SERIES[-1].split('.')
+  self.assertIn('NOT KWin_VERSION VERSION_LESS "'+last[0]+'.'+str(int(last[1])+1)+'"',cmake)
  def test_boot_splash_names_the_missing_requirement(self):
   self.assertEqual(self.support()['boot'],'')
   self.assertIn('neither was found',self.support(boot=None)['boot'])

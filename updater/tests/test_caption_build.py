@@ -7,7 +7,8 @@ class CaptionBuild(unittest.TestCase):
  def test_versions_and_unsupported_apis(self):
   self.assertEqual(builder.kwin_version('kwin_wayland 6.6.6'),'6.6.6')
   self.assertEqual(builder.kwin_version('KWin version: 6.7.5'),'6.7.5')
-  with self.assertRaises(RuntimeError):builder.kwin_version('kwin_wayland 6.8.0')
+  self.assertEqual(builder.kwin_version('kwin_wayland 6.8.2'),'6.8.2')
+  with self.assertRaises(RuntimeError):builder.kwin_version('kwin_wayland 6.9.0')
  def test_cache_requires_matching_source_sdk_and_binary(self):
   with tempfile.TemporaryDirectory() as folder:
    plugin=Path(folder)/'plugin';plugin.write_bytes(b'local module')
