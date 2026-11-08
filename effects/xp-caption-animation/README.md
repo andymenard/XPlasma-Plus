@@ -7,7 +7,7 @@ caption text, without caption buttons. Colors and font come from kdeglobals WM.
 Minimize targets KWin's actual taskbar icon geometry; restore reverses the trip.
 Maximize/restore retain the old window snapshot until the caption arrives.
 
-This native module supports the KWin 6.6 and 6.7 APIs and must be rebuilt for
+This native module supports the KWin 6.6, 6.7 and 6.8 APIs and must be rebuilt for
 another KWin ABI/version. It is not a Windows binary or a full-window scale
 animation. Borderless/CSD windows and windows without taskbar icon geometry
 are intentionally not given a fabricated destination. Fullscreen effects pause
@@ -51,7 +51,7 @@ See CREDITS.md for aubymori's behavioral reference.
 Select Caption Animation in XPlasma Update, then open **XP Caption Animation
 Setup** from Start. It installs Ubuntu build dependencies through sudo when
 needed, compiles and tests as your normal user, and activates the matching
-effect. No XP ISO or Fedora binary is needed. KWin 6.6 and 6.7 are supported.
+effect. No XP ISO or Fedora binary is needed. KWin 6.6, 6.7 and 6.8 are supported.
 
 Alternatively:
 

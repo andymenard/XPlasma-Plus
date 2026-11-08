@@ -62,6 +62,9 @@ def screens_manager(marker=None):
  except (OSError,ValueError,KeyError,TypeError):return None
  if uid==os.getuid():return None
  return str(record.get('user') or 'user '+str(uid))
+# KWin series the bundled caption animation source builds for (its build-local.py SUPPORTED_KWIN).
+CAPTION_KWIN_SERIES=('6.6','6.7','6.8')
+def caption_series(profile):return '.'.join(map(str,tuple(profile['plasma'])[:2]))
 def capabilities(profile,features):
  result={f['id']:'' for f in features}
  def disable(names,reason):
@@ -76,6 +79,9 @@ def capabilities(profile,features):
  if profile['plasma']<(6,6,0):disable(['tray'],'XP tray panels require Plasma 6.6 or newer.')
  if not widget_series(profile):disable(['taskbar'],'This Plasma/Qt combination has no verified XP widget port. The XP taskbar cannot be replaced with stock widgets; update the installer when its port is available.')
  if widget_target(profile) not in {'6.6','6.7','6.8'}:disable(['session','lock','caption_animation'],'This optional shell integration needs a matching Plasma recipe. Other XP desktop features remain available.')
+ # (KWin is versioned with Plasma: offered only where its source builds, so an
+ # upgrade after a Plasma update never has to build it for an unported KWin.)
+ elif caption_series(profile) not in CAPTION_KWIN_SERIES:disable(['caption_animation'],'The XP caption animation has not been ported to KWin '+caption_series(profile)+' yet. Other XP desktop features remain available.')
  if not profile['family']:
   disable(['pinball','minesweeper','solitaire'],'Game build dependencies require a supported package-manager adapter.')
  if not profile['family']:disable(['theme_manager','desktop','apps','taskbar','login','boot','caption_animation'],'Automatic dependency installation supports APT, DNF, pacman, Zypper and XBPS families.')

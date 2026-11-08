@@ -6,6 +6,9 @@ from pathlib import Path
 
 SOURCE=Path(__file__).resolve().parent
 PACKAGES=['build-essential','cmake','ninja-build','extra-cmake-modules','kwin-dev','qt6-declarative-dev','libdrm-dev','libwayland-dev','libvulkan-dev']
+# KWin series this source builds for; system_profile.CAPTION_KWIN_SERIES and
+# CMakeLists.txt must agree (tests check).
+SUPPORTED_KWIN=('6.6','6.7','6.8')
 SOURCES=['CMakeLists.txt','effect.cpp','caption.h','metadata.json','test-caption.cpp','demo.cpp']
 
 def run(args,**kwargs):
@@ -16,7 +19,7 @@ def kwin_version(text):
     match=re.search(r'(?:kwin(?:_wayland|_x11)?|KWin version:)\s+(6\.\d+\.\d+)',text,re.I)
     if not match:raise RuntimeError('Cannot identify the installed KWin version.')
     version=match.group(1)
-    if version.split('.')[1] not in ('6','7'):raise RuntimeError('This source supports KWin 6.6 and 6.7; a newer API needs a source update.')
+    if version.rsplit('.',1)[0] not in SUPPORTED_KWIN:raise RuntimeError('This source supports KWin '+', '.join(SUPPORTED_KWIN)+'; KWin '+version+' needs a source update.')
     return version
 
 def fingerprint(kwin,qt,packages,arch=None):

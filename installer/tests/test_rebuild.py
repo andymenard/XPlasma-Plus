@@ -65,12 +65,13 @@ class Rebuild(unittest.TestCase):
   for project in ['desktop','workspace']:(self.bundle/'source'/('plasma-'+project+'-6.7.5.tar.xz')).write_text('')
   self.kdeglobals=self.home/'.config/kdeglobals';self.kdeglobals.parent.mkdir(parents=True)
   self.kdeglobals.write_text('[General]\nfont=Noto Sans,10\n')
-  self.calls=[];self.broken=False;self.family=None;self.taskbar_ok=True
+  self.calls=[];self.broken=False;self.family=None;self.taskbar_ok=True;self.missing={}
   patcher=patch.dict(os.environ,{'HOME':str(self.home)});patcher.start();self.addCleanup(patcher.stop)
   stubs={'BASE':self.bundle,'preflight':lambda selected,installed=():None,'verify':lambda:None,'root':self.root,
          'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':self.family,'plasma':(6,7,5),'qt':(6,11,2),'systemd':True},'desktop_path':lambda home:home/'Desktop',
          'prepare_native':self.native,'basic':lambda *a,**k:None,'verify_taskbar':self.verify,'desktop_updates':lambda *a,**k:None,'caption_animation':lambda home:self.calls.append('caption'),
-         'taskbar_defaults':lambda home,selected:None,'refresh':lambda home,state:None}
+         'taskbar_defaults':lambda home,selected:None,'refresh':lambda home,state:None,
+         'unavailable':lambda names:{n:self.missing[n] for n in names if n in self.missing},'config':lambda *a:self.calls.append(('config',)+a)}
   for name,value in stubs.items():
    patcher=patch.object(b,name,value);patcher.start();self.addCleanup(patcher.stop)
   self.addCleanup(self.temp.cleanup)
@@ -103,6 +104,17 @@ class Rebuild(unittest.TestCase):
   record=json.loads((self.state()/'installation.json').read_text())
   self.assertEqual(record['rebuilds'][-1]['plasma'],'6.7.5');self.assertEqual(record['features'],['caption_animation','desktop','taskbar'])
   self.assertFalse((self.state()/'upgrade').exists())
+
+ def test_rebuild_holds_a_caption_animation_this_kwin_has_no_port_for(self):
+  self.lose('6.7.5');self.missing={'caption_animation':'Not ported to KWin 6.9 yet.'}
+  b.rebuild()
+  # The taskbar is rebuilt; the animation is neither built nor its tools installed.
+  self.assertIn(('root','dependencies',('desktop','taskbar'),False),self.calls)
+  self.assertNotIn('caption',self.calls)
+  self.assertIn(('config','kwinrc','Plugins','xp-caption-animationEnabled','false'),self.calls)
+  record=json.loads((self.state()/'installation.json').read_text())
+  self.assertEqual(record['held'],{'caption_animation':'Not ported to KWin 6.9 yet.'})
+  self.assertEqual(record['features'],['caption_animation','desktop','taskbar'])
 
  def test_failed_rebuild_puts_the_installation_back(self):
   self.lose('6.7.5');before=self.kdeglobals.read_text();self.broken=True

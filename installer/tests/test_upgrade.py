@@ -20,13 +20,15 @@ class Upgrade(unittest.TestCase):
   self.version('1.0.0-alpha.7')
   self.kdeglobals=self.home/'.config/kdeglobals';self.kdeglobals.parent.mkdir(parents=True)
   self.kdeglobals.write_text('[General]\nfont=Noto Sans,10\n')
-  self.calls=[];self.release='v1';self.broken=False
+  self.calls=[];self.release='v1';self.broken=False;self.missing={};self.caption_fails=False
   for target,value in {'HOME':str(self.home)}.items():
    patcher=patch.dict(os.environ,{target:value});patcher.start();self.addCleanup(patcher.stop)
   stubs={'BASE':self.bundle,'preflight':lambda selected,installed=():None,'verify':lambda:None,'root':self.root,
          'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':None,'plasma':(6,6,4),'qt':(6,10,2),'systemd':True},'desktop_path':lambda home:home/'Desktop',
          'prepare_native':self.native,'basic':self.basic,'verify_taskbar':lambda:None,'desktop_updates':lambda *a,**k:None,
-         'taskbar_defaults':lambda home,selected:self.calls.append('taskbar_defaults')}
+         'taskbar_defaults':lambda home,selected:self.calls.append('taskbar_defaults'),
+         'unavailable':lambda names:{n:self.missing[n] for n in names if n in self.missing},
+         'caption_animation':self.caption,'config':lambda *a:self.calls.append(('config',)+a)}
   for name,value in stubs.items():
    patcher=patch.object(b,name,value);patcher.start();self.addCleanup(patcher.stop)
   self.addCleanup(self.temp.cleanup)
@@ -40,6 +42,9 @@ class Upgrade(unittest.TestCase):
   (home/'.local/share/xplasma').mkdir(parents=True,exist_ok=True)
   (home/'.local/share/xplasma'/(self.release+'.txt')).write_text(self.release)
   if self.broken:raise RuntimeError('step failed')
+ def caption(self,home):
+  self.calls.append('caption')
+  if self.caption_fails:raise RuntimeError('KWin 6.9 needs a source update')
  def state(self):return self.home/'.local/share/kde-xp-suite'
  def record(self):return json.loads((self.state()/'installation.json').read_text())
 
@@ -96,6 +101,41 @@ class Upgrade(unittest.TestCase):
   self.install_v1()
   with self.assertRaisesRegex(RuntimeError,'Remove installed features first to drop: taskbar'):b.install({'desktop'},'Luna Blue')
   self.assertIn('release=v1',self.kdeglobals.read_text())
+
+ def test_upgrade_holds_a_feature_this_plasma_no_longer_supports(self):
+  b.install({'desktop','taskbar','caption_animation'},'Luna Blue')
+  # A Plasma update later, the release has no caption animation for it: the
+  # upgrade goes ahead without it instead of forcing it or refusing.
+  self.missing={'caption_animation':'Not ported to KWin 6.9 yet.'}
+  self.release='v2';self.calls.clear()
+  b.install({'desktop','taskbar'},'Luna Blue')
+  self.assertIn('release=v2',self.kdeglobals.read_text())
+  self.assertNotIn('caption',self.calls)
+  self.assertIn(('config','kwinrc','Plugins','xp-caption-animationEnabled','false'),self.calls)
+  record=self.record()
+  # Still installed, so Remove still restores what it changed.
+  self.assertEqual(record['features'],['caption_animation','desktop','taskbar'])
+  self.assertEqual(record['held'],{'caption_animation':'Not ported to KWin 6.9 yet.'})
+  # Once a release supports it again, an upgrade brings it back.
+  self.missing={};self.release='v3';self.calls.clear()
+  b.install({'desktop','taskbar','caption_animation'},'Luna Blue')
+  self.assertIn('caption',self.calls);self.assertNotIn('held',self.record())
+
+ def test_failed_caption_build_holds_it_and_the_upgrade_completes(self):
+  b.install({'desktop','taskbar','caption_animation'},'Luna Blue')
+  self.release='v2';self.caption_fails=True;self.calls.clear()
+  b.install({'desktop','taskbar','caption_animation'},'Luna Blue')
+  self.assertIn('release=v2',self.kdeglobals.read_text())
+  record=self.record()
+  self.assertEqual(record['features'],['caption_animation','desktop','taskbar'])
+  self.assertIn('KWin 6.9 needs a source update',record['held']['caption_animation'])
+  self.assertIn(('config','kwinrc','Plugins','xp-caption-animationEnabled','false'),self.calls)
+  self.assertFalse((self.state()/'upgrade').exists())
+
+ def test_native_features_are_not_held(self):
+  # They share one build: an unavailable taskbar still needs Remove first.
+  self.install_v1();self.missing={'taskbar':'No XP widget port.'}
+  with self.assertRaisesRegex(RuntimeError,'Remove installed features first to drop: taskbar'):b.install({'desktop'},'Luna Blue')
 
  def test_new_tracked_paths_join_the_original_backup(self):
   self.install_v1()

@@ -75,9 +75,19 @@ public:
 #endif
         );
     }
-    void paintWindow(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,const Region &region,WindowPaintData &data) override {
+#ifdef XP_KWIN_68
+    // KWin 6.8: paint calls report whether rendering succeeded.
+    using PaintResult=bool;
+#define XP_PAINT_SKIPPED true
+#define XP_PAINT_RETURN return
+#else
+    using PaintResult=void;
+#define XP_PAINT_SKIPPED
+#define XP_PAINT_RETURN
+#endif
+    PaintResult paintWindow(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,const Region &region,WindowPaintData &data) override {
         if(w==m_window){
-            if(m_restoreMin)return; // Body becomes visible after the moving caption arrives.
+            if(m_restoreMin)return XP_PAINT_SKIPPED; // Body becomes visible after the moving caption arrives.
             const QRectF now=w->frameGeometry();
             data.setCrossFadeProgress(0); // Hold the pre-transition snapshot, no crossfade.
             data.setXScale(m_oldGeometry.width()/qMax(qreal(1),now.width()));
@@ -85,7 +95,7 @@ public:
             data.setXTranslation(m_oldGeometry.x()-now.x());
             data.setYTranslation(m_oldGeometry.y()-now.y());
         }
-        CrossFadeEffect::paintWindow(target,viewport,w,mask,region,data);
+        XP_PAINT_RETURN CrossFadeEffect::paintWindow(target,viewport,w,mask,region,data);
     }
 private:
     struct Before {QRectF geometry;QRectF caption;};

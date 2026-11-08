@@ -145,7 +145,9 @@ class Installer(QtWidgets.QMainWindow):
   for feature in FEATURES:
    item=self.items[feature['id']];reason=self.support[feature['id']]
    locked=feature['id'] in self.locked and not reason
-   tip=feature_description(feature)+('\nUnavailable: '+reason if reason else '')+('\nInstalled: an upgrade keeps it. Remove the installation to drop it.' if locked else '')
+   held=feature['id'] in self.locked and reason and not feature['native']
+   tip=feature_description(feature)+('\nUnavailable: '+reason if reason else '')+('\nInstalled: an upgrade keeps it. Remove the installation to drop it.' if locked else '')+('\nInstalled: an upgrade holds it, kept but switched off, until a release supports this system. Everything else upgrades.' if held else '')
+   if held:item.setText(0,feature['name']+' (unavailable — held)')
    item.setToolTip(0,tip)
    if locked:item.setFlags(item.flags() & ~QtCore.Qt.ItemFlag.ItemIsUserCheckable)
    elif not reason:item.setFlags(item.flags()|QtCore.Qt.ItemFlag.ItemIsUserCheckable)
