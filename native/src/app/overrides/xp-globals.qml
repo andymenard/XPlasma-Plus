@@ -53,6 +53,28 @@
         };
         xpQueue = xpQueue.map(e => e.id === popup.notificationId ? Object.assign({}, e, {unread: true, snapshot: snapshot}) : e);
     }
+    // A notification leaving the history -- dismissed from it, or the history
+    // cleared -- takes its icon with it, blinking or not: an icon for a
+    // notification the list no longer has would be one only a click could
+    // remove. (A transient one was never kept in the history; its icon stays
+    // until clicked, as it did.)
+    property QtObject xpHistory: NotificationManager.Notifications {
+        showExpired: true
+        showDismissed: true
+        showJobs: false
+        groupMode: NotificationManager.Notifications.GroupDisabled
+    }
+    property QtObject xpHistoryWatch: Connections {
+        target: globals.xpHistory
+        function onRowsAboutToBeRemoved(parent, first, last) {
+            for (let row = first; row <= last; ++row) {
+                const index = globals.xpHistory.index(row, 0);
+                if (globals.xpHistory.data(index, NotificationManager.Notifications.TransientRole))
+                    continue;
+                globals.xpForget(globals.xpHistory.data(index, NotificationManager.Notifications.IdRole));
+            }
+        }
+    }
     // A popup gone: its icon too, unless it's left blinking.
     function xpDropped(id) {
         const e = xpEntry(id);
