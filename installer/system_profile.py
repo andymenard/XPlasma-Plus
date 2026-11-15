@@ -75,7 +75,8 @@ def capabilities(profile,features):
  if profile['qt']<(6,6,0):disable(['theme_manager','desktop','apps','taskbar'],'XPlasma requires Qt 6.6 or newer; Qt development tools must be installed for detection.')
  if profile['plasma']<(6,6,0):disable(['tray'],'XP tray panels require Plasma 6.6 or newer.')
  if not widget_series(profile):disable(['taskbar'],'This Plasma/Qt combination has no verified XP widget port. The XP taskbar cannot be replaced with stock widgets; update the installer when its port is available.')
- if widget_target(profile) not in {'6.6','6.7','6.8'}:disable(['session','lock','caption_animation'],'This optional shell integration needs a matching Plasma recipe. Other XP desktop features remain available.')
+ if widget_series(profile) not in {'6.3','6.6','6.7','6.8'}:disable(['session','lock'],'This optional shell integration needs a matching Plasma recipe. Other XP desktop features remain available.')
+ if widget_series(profile) not in {'6.3','6.6','6.7'}:disable(['caption_animation'],'The caption effect supports KWin 6.3, 6.6 and 6.7; this compositor needs a matching API port.')
  if not profile['family']:
   disable(['pinball','minesweeper','solitaire'],'Game build dependencies require a supported package-manager adapter.')
  if not profile['family']:disable(['theme_manager','desktop','apps','taskbar','login','boot','caption_animation'],'Automatic dependency installation supports APT, DNF, pacman, Zypper and XBPS families.')

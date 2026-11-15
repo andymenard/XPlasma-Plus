@@ -26,3 +26,9 @@ installer yet; other KWin versions need a matching build/API port.
 - 28 updater/build/outline tests passed. Signed 0.2.1 -> 0.2.2 optional-feature
   install and rollback passed for AMD64 Qt 6.10 and ARM64 Qt 6.11 fixtures.
 - Physical Kubuntu AMD64 desktop activation has not been tested here.
+
+Debian 13 regression: built and linked against KWin 6.3.6 / Qt 6.8.2,
+passed the caption motion/raster test, and exercised maximize, restore,
+minimize, KWin-requested unminimize, interrupted animation and window close
+in an isolated virtual KWin session (`test-kwin.py`). The virtual test uses a
+synthetic taskbar destination; real panel geometry requires a live check.

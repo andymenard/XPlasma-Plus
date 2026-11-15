@@ -7,7 +7,7 @@ caption text, without caption buttons. Colors and font come from kdeglobals WM.
 Minimize targets KWin's actual taskbar icon geometry; restore reverses the trip.
 Maximize/restore retain the old window snapshot until the caption arrives.
 
-This native module supports the KWin 6.6 and 6.7 APIs and must be rebuilt for
+This native module supports the KWin 6.3, 6.6 and 6.7 APIs and must be rebuilt for
 another KWin ABI/version. It is not a Windows binary or a full-window scale
 animation. Borderless/CSD windows and windows without taskbar icon geometry
 are intentionally not given a fabricated destination. Fullscreen effects pause
@@ -51,7 +51,7 @@ See CREDITS.md for aubymori's behavioral reference.
 Select Caption Animation in XPlasma Update, then open **XP Caption Animation
 Setup** from Start. It installs Ubuntu build dependencies through sudo when
 needed, compiles and tests as your normal user, and activates the matching
-effect. No XP ISO or Fedora binary is needed. KWin 6.6 and 6.7 are supported.
+effect. No XP ISO or Fedora binary is needed. KWin 6.3, 6.6 and 6.7 are supported.
 
 Alternatively:
 
@@ -70,3 +70,20 @@ The effect now advances on compositor frames, reuses a pre-rendered caption
 label during each animation, and watches WM configuration instead of reopening
 it for each animation. KWin 6.6 factory/signature support and native-build ABI
 checks are retained. This source merge does not install or activate the effect.
+
+## Debian 13 / Plasma 6.3
+
+The generic installer supports the KWin 6.3 painting API as well as 6.6/6.7.
+Build against the distribution's matching `kwin-dev`; a binary from a newer
+KWin must never be loaded into 6.3. The exact runtime/SDK checks still apply.
+
+Run the isolated compositor regression after building:
+
+    python3 test-kwin.py build/lib/kwin/effects/plugins/xp-caption-animation.so
+
+It needs `kwin_wayland`, `dbus-run-session`, `qdbus6`, PyQt6 Widgets and Mesa
+software rendering. It creates a disposable home, D-Bus session and virtual
+Wayland output. The test checks maximize/restore, minimize, KWin-requested
+unminimize, interrupted transitions and closing during animation. Its taskbar
+geometry is synthetic, enabled only by `XPLASMA_ANIMATION_TEST=1` in that
+isolated session; it does not prove integration with a particular live panel.

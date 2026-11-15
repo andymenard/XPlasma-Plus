@@ -26,7 +26,7 @@ class Upgrade(unittest.TestCase):
   stubs={'BASE':self.bundle,'preflight':lambda selected,installed=():None,'verify':lambda:None,'root':self.root,
          'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':None,'plasma':(6,6,4),'qt':(6,10,2),'systemd':True},'desktop_path':lambda home:home/'Desktop',
          'prepare_native':self.native,'basic':self.basic,'verify_taskbar':lambda:None,'desktop_updates':lambda *a,**k:None,
-         'taskbar_defaults':lambda home,selected:self.calls.append('taskbar_defaults')}
+         'taskbar_defaults':lambda home,selected,repair=False:self.calls.append('repair_taskbar_defaults' if repair else 'taskbar_defaults')}
   for name,value in stubs.items():
    patcher=patch.object(b,name,value);patcher.start();self.addCleanup(patcher.stop)
   self.addCleanup(self.temp.cleanup)
@@ -62,6 +62,7 @@ class Upgrade(unittest.TestCase):
   # The current theme is reapplied, and the Quick Launch isn't seeded again.
   self.assertIn(('native',True,None),self.calls)
   self.assertNotIn('taskbar_defaults',self.calls)
+  self.assertIn('repair_taskbar_defaults',self.calls)
   self.assertFalse((self.state()/'upgrade').exists())
   self.assertEqual(json.loads((self.state()/'installer/edition.json').read_text()),{'version':'1.0.0-alpha.8'})
   b.uninstall()

@@ -7,7 +7,7 @@
 #include <effect/effecthandler.h>
 #include <effect/effectwindow.h>
 #include <scene/imageitem.h>
-#ifdef XP_KWIN_66
+#ifdef XP_KWIN_PRE_67
 #include <scene/itemrenderer.h>
 #endif
 #include <scene/windowitem.h>
@@ -25,7 +25,7 @@ class XPCaptionAnimation : public CrossFadeEffect {
 public:
     XPCaptionAnimation() {
         if(qEnvironmentVariableIsSet("XPLASMA_ANIMATION_TEST"))fprintf(stderr,"XP_CAPTION_CONSTRUCT\n");
-#ifdef XP_KWIN_66
+#ifdef XP_KWIN_PRE_67
         m_caption=effects->scene()->renderer()->createImageItem(effects->scene()->overlayItem());
 #else
         m_caption=std::make_unique<ImageItem>(effects->scene()->overlayItem());
@@ -46,13 +46,13 @@ public:
     // Frames come from the compositor, not a timer: every refresh at the
     // output's own rate, none while nothing is drawn.
     void prePaintScreen(ScreenPrePaintData &data
-#ifdef XP_KWIN_66
+#ifdef XP_KWIN_PRE_67
         ,std::chrono::milliseconds presentTime
 #endif
     ) override {
         if(m_window)tick();
         CrossFadeEffect::prePaintScreen(data
-#ifdef XP_KWIN_66
+#ifdef XP_KWIN_PRE_67
             ,presentTime
 #endif
         );
@@ -61,21 +61,41 @@ public:
         CrossFadeEffect::postPaintScreen();
         if(!m_window)return;
         if(effects->activeFullScreenEffect()||m_clock.elapsed()>=XP::duration)finish();
-        else effects->addRepaint(RectF(m_bar));
+        else {
+#ifdef XP_KWIN_63
+            effects->addRepaint(m_bar);
+#else
+            effects->addRepaint(RectF(m_bar));
+#endif
+        }
     }
-    void prePaintWindow(RenderView *view,EffectWindow *w,WindowPrePaintData &data
-#ifdef XP_KWIN_66
+    void prePaintWindow(
+#ifndef XP_KWIN_63
+        RenderView *view,
+#endif
+        EffectWindow *w,WindowPrePaintData &data
+#ifdef XP_KWIN_PRE_67
         ,std::chrono::milliseconds presentTime
 #endif
     ) override {
         if(w==m_window){data.setTransformed();data.setTranslucent();}
-        CrossFadeEffect::prePaintWindow(view,w,data
-#ifdef XP_KWIN_66
+        CrossFadeEffect::prePaintWindow(
+#ifndef XP_KWIN_63
+            view,
+#endif
+            w,data
+#ifdef XP_KWIN_PRE_67
             ,presentTime
 #endif
         );
     }
-    void paintWindow(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,const Region &region,WindowPaintData &data) override {
+    void paintWindow(const RenderTarget &target,const RenderViewport &viewport,EffectWindow *w,int mask,
+#ifdef XP_KWIN_63
+        QRegion region,
+#else
+        const Region &region,
+#endif
+        WindowPaintData &data) override {
         if(w==m_window){
             if(m_restoreMin)return; // Body becomes visible after the moving caption arrives.
             const QRectF now=w->frameGeometry();

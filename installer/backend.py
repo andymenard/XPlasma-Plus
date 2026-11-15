@@ -6,7 +6,7 @@ BASE=Path(__file__).resolve().parent
 sys.path.insert(0,str(BASE/'lib'))
 import tomlkit
 ACCESSORIES={'notepad','calculator','paint','picture_viewer','media_player','sound_recorder','volume_control','command_prompt','task_manager','pinball','minesweeper','solitaire'}
-from system_profile import detect,capabilities,widget_target
+from system_profile import detect,capabilities,widget_target,widget_series
 STATE_NAME='kde-xp-suite'
 FEATURES=json.loads((BASE/'features.json').read_text())
 KNOWN={f['id'] for f in FEATURES}
@@ -456,7 +456,7 @@ def session_watch(home,state):
   def quote(value):return '"'+str(value).replace('\\','\\\\').replace('"','\\"').replace('`','\\`').replace('$','\\$').replace('%','%%')+'"'
   entry.write_text('[Desktop Entry]\nType=Application\nName=XPlasma theme synchronization\nExec='+quote(sys.executable)+' '+quote(helper)+'\nOnlyShowIn=KDE;\n')
   subprocess.Popen([sys.executable,str(helper)],start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-def taskbar_defaults(home,selected):
+def taskbar_defaults(home,selected,repair=False):
  # Seed the installer's Quick Launch once. Later theme changes retain edits.
  roots=[home/'.local/share/applications',Path('/usr/local/share/applications'),Path('/usr/share/applications'),
         Path('/var/lib/snapd/desktop/applications'),home/'.local/share/flatpak/exports/share/applications',Path('/var/lib/flatpak/exports/share/applications')]
@@ -469,17 +469,49 @@ def taskbar_defaults(home,selected):
  urls=[url for url in [settings,manager,browser] if url]
  if len(urls)!=3:print('A requested default taskbar application was not found; pinning the installed applications only.',flush=True)
  script='''panels().forEach(function(p){
- var quick=null;p.widgets().forEach(function(w){
-  if(w.type==="org.kde.plasma.quicklaunch"&&!quick)quick=w;
-  if(w.type==="org.kde.plasma.taskmanager"||w.type==="org.kde.plasma.icontasks"){
-   w.currentConfigGroup=["General"];w.writeConfig("launchers",[]);w.reloadConfig();}
+ var widgets=p.widgets();
+ var start=widgets.filter(function(w){return w.type==="fyi.hotsocket.xplasma.start";})[0];
+ if(!start)return;
+ var quick=widgets.filter(function(w){return w.type==="org.kde.plasma.quicklaunch";})[0];
+ var saved=[];
+ if(REPAIR){
+  // Migrate only the shipped three-shortcut layout, never a user's edited pins.
+  if(!quick)return;
+  quick.currentConfigGroup=["General"];
+  if(String(quick.readConfig("launcherUrls"))!==URLS.join(","))return;
+  var clock=widgets.filter(function(w){return w.type==="fyi.hotsocket.xplasma.clock";})[0];
+  if(!clock||quick.geometry.x<=clock.geometry.x)return;
+  function remember(group){
+   quick.currentConfigGroup=group;
+   var values={};quick.configKeys.forEach(function(key){values[key]=quick.readConfig(key);});
+   saved.push({group:group,values:values});
+   quick.configGroups.forEach(function(child){remember(group.concat([child]));});
+  }
+  remember([]);
+ }else{
+  widgets.forEach(function(w){
+   if(w.type==="org.kde.plasma.taskmanager"||w.type==="org.kde.plasma.icontasks"){
+    w.currentConfigGroup=["General"];w.writeConfig("launchers",[]);w.reloadConfig();}
+  });
+ }
+ // Widget.index is a no-op in Plasma. A supplied position inserts into the live layout.
+ var geometry=start.geometry;
+ if(!geometry||geometry.width<=0||geometry.height<=0)throw Error("XP Start geometry is not ready");
+ var replacement=p.addWidget("org.kde.plasma.quicklaunch",geometry.x+geometry.width-1,
+                             geometry.y+geometry.height/2,1,geometry.height);
+ if(!replacement||replacement.type!=="org.kde.plasma.quicklaunch")throw Error("Could not insert XP Quick Launch");
+ saved.forEach(function(record){
+  replacement.currentConfigGroup=record.group;
+  Object.keys(record.values).forEach(function(key){replacement.writeConfig(key,record.values[key]);});
  });
- if(!quick)quick=p.addWidget("org.kde.plasma.quicklaunch");
- quick.currentConfigGroup=["General"];quick.writeConfig("launcherUrls",URLS);
- quick.writeConfig("maxSectionCount",1);quick.writeConfig("showLauncherNames",false);quick.writeConfig("enablePopup",false);quick.reloadConfig();
- var start=p.widgets().filter(function(w){return w.type==="fyi.hotsocket.xplasma.start";})[0];
- if(start)quick.index=start.index+1;
-});'''.replace('URLS',json.dumps(urls))
+ replacement.currentConfigGroup=["General"];
+ if(!REPAIR){
+  replacement.writeConfig("launcherUrls",URLS);
+  replacement.writeConfig("maxSectionCount",1);replacement.writeConfig("showLauncherNames",false);replacement.writeConfig("enablePopup",false);
+ }
+ replacement.reloadConfig();
+ if(quick)quick.remove();
+});'''.replace('URLS',json.dumps(urls)).replace('REPAIR','true' if repair else 'false')
  run([kdbus(),'org.kde.plasmashell','/PlasmaShell','org.kde.PlasmaShell.evaluateScript',script])
 
 def desktop_updates(home,state,selected,asset_options=None):
@@ -542,6 +574,10 @@ def lock_screen(home,state,upgrade=False):
   if p.name!='lockscreen':(dest/'contents'/p.name).symlink_to(p)
  copy(state/'templates/lockscreen',dest/'contents/lockscreen')
  copy(state/'templates/sddm/assets',dest/'contents/lockscreen/assets')
+ if widget_series(detect())=='6.3':
+  # The OSD QML module was introduced after 6.3. Use this release's OSD,
+  # which imports the sibling contents/osd directory linked above.
+  copy(src/'contents/lockscreen/LockOsd.qml',dest/'contents/lockscreen/LockOsd.qml')
 def firefox_profile_defaults(profile, seed=None):
  # user.js is reapplied on every launch: mutable toolbar choices belong in
  # prefs.js, seeded only for a new profile. Also migrate older payloads.
@@ -719,7 +755,9 @@ def install(selected,theme,asset_options=None):
   # (Once: an upgrade keeps a browser chosen since.)
   if 'firefox_default' in selected and 'firefox_default' not in installed:phase('Making IE6 Firefox the default web browser');browser_default(home)
   # (Seeded once: an upgrade keeps the Quick Launch as it has been edited.)
-  if 'taskbar' in selected and 'taskbar' not in installed:phase('Setting default taskbar shortcuts');taskbar_defaults(home,selected)
+  if 'taskbar' in selected:
+   phase('Repairing default taskbar shortcut placement' if 'taskbar' in installed else 'Setting default taskbar shortcuts')
+   taskbar_defaults(home,selected,repair='taskbar' in installed)
   if 'desktop_icons' in selected:phase('Adding XP desktop shortcuts');shortcuts(home,state,selected,asset_options)
   if selected&{'codex_colors','clippy'}:phase('Configuring Codex extras');codex(home,selected,'clippy' in installed)
   if selected&{'login','boot'}:

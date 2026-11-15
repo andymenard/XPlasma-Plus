@@ -16,7 +16,7 @@ def kwin_version(text):
     match=re.search(r'(?:kwin(?:_wayland|_x11)?|KWin version:)\s+(6\.\d+\.\d+)',text,re.I)
     if not match:raise RuntimeError('Cannot identify the installed KWin version.')
     version=match.group(1)
-    if version.split('.')[1] not in ('6','7'):raise RuntimeError('This source supports KWin 6.6 and 6.7; a newer API needs a source update.')
+    if version.split('.')[1] not in ('3','6','7'):raise RuntimeError('This source supports KWin 6.3, 6.6 and 6.7; a newer API needs a source update.')
     return version
 
 def fingerprint(kwin,qt,packages,arch=None):
