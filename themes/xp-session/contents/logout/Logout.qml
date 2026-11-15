@@ -44,6 +44,7 @@ Item {
         root.suspendRequested(4);
     }
 
+    readonly property string bootLoaderEntry: typeof rebootToBootLoaderEntry === "undefined" ? "" : rebootToBootLoaderEntry
     readonly property bool powerMode: sdtype !== ShutdownType.ShutdownTypeNone
     readonly property var navigationButtons: [suspendButton, hibernateButton, shutdownButton, shutdownWithoutUpdatesButton, rebootButton, rebootWithoutUpdatesButton, switchUserButton, logoutButton, cancelButton].filter(b => b.visible && b.enabled)
     function neighbor(button, direction) {
@@ -79,7 +80,6 @@ Item {
 
         // In case the default values ever change
         includeUnusedSessions: false
-        includeOwnSession: false
     }
 
     // SessionsModel excludes this session, not other sessions of this account.
@@ -218,9 +218,9 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             font.italic: true
-            text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "%1 is a boot loader entry", "When restarted, the computer will switch to %1.", rebootToBootLoaderEntry)
+            text: i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "%1 is a boot loader entry", "When restarted, the computer will switch to %1.", root.bootLoaderEntry)
             textFormat: Text.PlainText
-            visible: rebootToBootLoaderEntry != ""
+            visible: root.bootLoaderEntry !== ""
         }
 
     }

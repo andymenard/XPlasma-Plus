@@ -1,7 +1,7 @@
 name: XP widgets across Plasma 6
 on:
   pull_request:
-    paths: ['native/**', 'installer/**', '.github/workflows/plasma-widget-compatibility.yml']
+    paths: ['native/**', 'installer/**', 'effects/xp-caption-animation/**', 'themes/xp-session/**', 'themes/xp-lockscreen/**', '.github/workflows/plasma-widget-compatibility.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -376,3 +376,29 @@ jobs:
           name: live-desktop-plasma-${{ matrix.plasma }}
           path: /tmp/live-desktop-results
           retention-days: 7
+
+  debian-shell-integrations:
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    timeout-minutes: 15
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Install matching Plasma 6.3 SDK and test tools
+        run: |
+          apt-get update
+          apt-get install -y git ca-certificates cmake ninja-build g++ extra-cmake-modules kwin-dev kwin-wayland plasma-workspace plasma-desktop qt6-base-dev qt6-declarative-dev libdrm-dev libwayland-dev libvulkan-dev python3-pyqt6 python3-pyqt6.qtqml python3-pyqt6.qtquick dbus-x11 qdbus-qt6 libgl1-mesa-dri
+      - uses: actions/checkout@v4
+      - name: Check compatibility decisions, panel placement and session signals
+        run: |
+          python3 -m unittest discover -s installer/tests -p test_generic_compatibility.py -v
+          python3 -m unittest discover -s installer/tests -p test_taskbar_defaults.py -v
+          python3 -m unittest discover -s installer/tests -p test_shell_compatibility.py -v
+          dbus-run-session -- python3 -m unittest discover -s installer/tests -p test_logout_dialog.py -v
+      - name: Build and exercise the native caption effect
+        run: |
+          cmake -S effects/xp-caption-animation -B /tmp/caption -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/caption --parallel 2
+          ctest --test-dir /tmp/caption --output-on-failure
+          python3 effects/xp-caption-animation/test-kwin.py /tmp/caption/lib/kwin/effects/plugins/xp-caption-animation.so

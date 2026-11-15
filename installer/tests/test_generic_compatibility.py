@@ -18,12 +18,19 @@ class Compatibility(unittest.TestCase):
    with self.subTest(minor=minor):
     support=self.support(plasma=(6,minor,0),qt=qt)
     for feature in ['theme_manager','desktop','apps','taskbar']:self.assertEqual(support[feature],'')
- def test_trixie_uses_packaged_xp_ports_without_enabling_unported_dialogs(self):
+ def test_trixie_supports_packaged_widgets_and_optional_shell_integrations(self):
   support=self.support()
   self.assertEqual(support['taskbar'],'')
   self.assertIsNone(profile.widget_target(BASE))
   self.assertEqual(profile.widget_series(BASE),'6.3')
-  self.assertTrue(support['lock']);self.assertTrue(support['caption_animation'])
+  for feature in ['session','lock','caption_animation']:self.assertEqual(support[feature],'')
+ def test_optional_features_have_independent_api_limits(self):
+  for minor in [0,1,2,4,5,8,9]:
+   with self.subTest(minor=minor):
+    support=self.support(plasma=(6,minor,0),qt=(6,12,0))
+    self.assertTrue(support['caption_animation'])
+    self.assertEqual(bool(support['session']),minor!=8)
+    self.assertEqual(bool(support['lock']),minor!=8)
  def test_boot_splash_names_the_missing_requirement(self):
   self.assertEqual(self.support()['boot'],'')
   self.assertIn('neither was found',self.support(boot=None)['boot'])

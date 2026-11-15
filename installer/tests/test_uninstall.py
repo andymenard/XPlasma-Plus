@@ -17,7 +17,7 @@ class Uninstall(unittest.TestCase):
   self.calls=[]
   stubs={'BASE':bundle,'preflight':lambda selected,installed=():None,'verify':lambda:None,'root':lambda *a,**k:self.calls.append((a,k)),
          'gnome':lambda:{},'run':lambda *a,**k:'','detect':lambda:{'family':None,'plasma':(6,6,4),'qt':(6,10,2),'systemd':True},'desktop_path':lambda home:home/'Desktop',
-         'prepare_native':self.apply,'basic':lambda *a,**k:None,'verify_taskbar':lambda:None,'desktop_updates':lambda *a,**k:None,'taskbar_defaults':lambda *a:None}
+         'prepare_native':self.apply,'basic':lambda *a,**k:None,'verify_taskbar':lambda:None,'desktop_updates':lambda *a,**k:None,'taskbar_defaults':lambda *a,**k:None}
   for name,value in stubs.items():
    patcher=patch.object(b,name,value);patcher.start();self.addCleanup(patcher.stop)
   # The desktop before XP, including a GTK theme and a look of the user's own.

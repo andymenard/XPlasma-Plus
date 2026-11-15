@@ -149,7 +149,12 @@ experimental Void/XBPS support. The actual XP Start menu, task buttons, clock,
 tray and notifications support Plasma 6.0–6.8; each branch has passed automated
 live desktop acceptance. Qt 6.6 or newer and the matching per-branch Qt API floor
 are required. Optional lock, logout and caption-effect integrations have separate
-compatibility checks. Dependency installation needs internet access.
+compatibility checks. Debian 13 / Plasma 6.3 supports XP logout menus, the KDE
+lock screen and the caption animation built against its matching KWin SDK.
+Caption animation supports KWin 6.3, 6.6 and 6.7; other APIs remain unavailable
+until ported. Quick Launch uses panel coordinates to place shortcuts beside
+Start; an upgrade repairs the unchanged default shortcuts if they were placed
+after the clock. Dependency installation needs internet access.
 
 XP widgets remain required: an unsupported layout or failed build stops
 installation and provides a copyable diagnostic report. See
