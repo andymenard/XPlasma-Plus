@@ -36,15 +36,30 @@ def main():
     if os.geteuid() != 0:
         parser.error('Administrator authentication is required.')
     result = update(CONFIG.read_text(), args.scale, args.keyboard == 'on')
-    # Keep the first settings so the local adjustment can be undone.
-    backup = CONFIG.with_suffix('.conf.before-properties')
+    save(CONFIG, result)
+
+def save(path, result):
+    # SDDM loads every file in sddm.conf.d, regardless of its extension.
+    # Backups and pending writes must live outside that directory.
+    backup_dir = path.parent.parent / 'xplasma-backups'
+    backup_dir.mkdir(mode=0o755, exist_ok=True)
+    backup = backup_dir / (path.name + '.before-properties')
+    legacy_backup = path.with_suffix('.conf.before-properties')
+    if legacy_backup.exists():
+        if not backup.exists():
+            legacy_backup.replace(backup)
+        else:
+            legacy_backup.unlink()
     if not backup.exists():
-        backup.write_bytes(CONFIG.read_bytes())
+        backup.write_bytes(path.read_bytes())
         backup.chmod(0o644)
-    temporary = CONFIG.with_suffix('.conf.new')
-    temporary.write_text(result)
-    temporary.chmod(0o644)
-    temporary.replace(CONFIG)
+    temporary = backup_dir / (path.name + '.new')
+    try:
+        temporary.write_text(result)
+        temporary.chmod(0o644)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 if __name__ == '__main__':
     main()
