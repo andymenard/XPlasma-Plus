@@ -22,6 +22,9 @@ in the source repository for the branch matrix and testing status.
 
 Native components build against the receiving machine's KDE/Qt. Desktop features
 target Plasma 6 on supported Fedora, Debian/Ubuntu, Arch and openSUSE families.
+For delayed XP title bars on an existing installation, see the
+[native window decoration guide](../tools/native-decoration/README.md) for the
+tested manual optimization, compatibility limits and rollback steps.
 Unknown distributions can use resource-only features when tools already exist.
 Allow 5 GB for native builds or 2 GB for resource-only installation. Firefox uses a
 separate ESR profile; existing browsing data and toolbar preferences are preserved.
