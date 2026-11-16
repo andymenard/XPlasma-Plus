@@ -45,6 +45,8 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QSettings>
+#include <QSpinBox>
+#include <QProcess>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTimer>
@@ -158,6 +160,66 @@ DisplayProperties::DisplayProperties(QWidget *parent)
     m_tabs->addTab(appearanceTab(), QStringLiteral("Appearance"));
     m_tabs->addTab(customLunaTab(), QStringLiteral("Custom Colors"));
     m_tabs->addTab(pointersTab(), QStringLiteral("Pointers"));
+    auto *loginPage = new QWidget;
+    auto *loginLayout = new QVBoxLayout(loginPage);
+    auto *loginHelp = new QLabel(QStringLiteral("Adjust the SDDM Welcome login screen for all accounts.\nChanges take effect the next time the login screen starts.\nThe Plasma session lock screen has separate settings."));
+    loginHelp->setWordWrap(true);
+    loginLayout->addWidget(loginHelp);
+    auto *loginScale = new QSpinBox;
+    loginScale->setRange(50, 300);
+    loginScale->setSingleStep(25);
+    loginScale->setSuffix(QStringLiteral("%"));
+    QSettings loginConfig(QStringLiteral("/etc/sddm.conf.d/90-xp-welcome.conf"), QSettings::IniFormat);
+    const QString greeterEnvironment = loginConfig.value(QStringLiteral("General/GreeterEnvironment")).toStringList().join(QLatin1Char(','));
+    int initialScale = 100;
+    for (const QString &entry : greeterEnvironment.split(QLatin1Char(','))) {
+        if (entry.startsWith(QLatin1String("QT_SCALE_FACTOR="))) {
+            bool valid = false;
+            const double factor = entry.mid(16).toDouble(&valid);
+            if (valid) initialScale = qRound(factor * 100);
+        }
+    }
+    loginScale->setValue(initialScale);
+    loginLayout->addWidget(new QLabel(QStringLiteral("Login screen scale (100% uses the system default):")));
+    loginLayout->addWidget(loginScale);
+    auto *loginKeyboard = new QCheckBox(QStringLiteral("Enable onscreen keyboard"));
+    loginKeyboard->setChecked(loginConfig.value(QStringLiteral("General/InputMethod")).toString() == QLatin1String("qtvirtualkeyboard"));
+    loginLayout->addWidget(loginKeyboard);
+    auto *loginSave = new QPushButton(QStringLiteral("Apply Login Screen Settings…"));
+    auto *loginStatus = new QLabel(QStringLiteral("Administrator authentication is required."));
+    loginStatus->setWordWrap(true);
+    loginLayout->addWidget(loginSave);
+    loginLayout->addWidget(loginStatus);
+    loginLayout->addStretch();
+    connect(loginSave, &QPushButton::clicked, this, [this, loginScale, loginKeyboard, loginSave, loginStatus] {
+        const QString helper = QDir::homePath() + QStringLiteral("/.local/share/kde-xp-suite/installer/login_settings.py");
+        if (!QFileInfo::exists(helper)) {
+            loginStatus->setText(QStringLiteral("Login settings helper is missing. Reinstall XPlasma Plus."));
+            return;
+        }
+        auto *process = new QProcess(this);
+        loginSave->setEnabled(false);
+        loginStatus->setText(QStringLiteral("Waiting for administrator authentication…"));
+        connect(process, &QProcess::errorOccurred, this, [loginSave, loginStatus, process](QProcess::ProcessError error) {
+            if (error == QProcess::FailedToStart) {
+                loginSave->setEnabled(true);
+                loginStatus->setText(QStringLiteral("Could not start authentication: ") + process->errorString());
+                process->deleteLater();
+            }
+        });
+        connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
+                [loginSave, loginStatus, process](int code, QProcess::ExitStatus status) {
+            loginSave->setEnabled(true);
+            loginStatus->setText(code == 0 && status == QProcess::NormalExit
+                ? QStringLiteral("Saved. The next login screen will use these settings.")
+                : QStringLiteral("Settings were not saved. ") + QString::fromUtf8(process->readAllStandardError()).trimmed());
+            process->deleteLater();
+        });
+        process->start(QStringLiteral("pkexec"), {QStringLiteral("/usr/bin/python3"), helper,
+                       QStringLiteral("--scale"), QString::number(loginScale->value()),
+                       QStringLiteral("--keyboard"), loginKeyboard->isChecked() ? QStringLiteral("on") : QStringLiteral("off")});
+    });
+    m_tabs->addTab(loginPage, QStringLiteral("Login Screen"));
     m_sounds = new SoundsTab;
     m_tabs->addTab(m_sounds, QStringLiteral("Sounds"));
     connect(m_sounds, &SoundsTab::changed, this, &DisplayProperties::updateApply);
@@ -1673,7 +1735,7 @@ bool DisplayProperties::saveScreenshots(const QString &dir)
     show();
     bool ok = true;
     m_sounds->showForScreenshot();
-    const char *const names[] = {"themes", "desktop", "appearance", "custom-luna", "pointers", "sounds", "about"};
+    const char *const names[] = {"themes", "desktop", "appearance", "custom-luna", "pointers", "login-screen", "sounds", "about"};
     for (int i = 0; i < m_tabs->count(); ++i) {
         m_tabs->setCurrentIndex(i);
         QApplication::processEvents();
