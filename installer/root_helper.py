@@ -143,7 +143,7 @@ def screens(home,store,features,upgrade=False):
    for src,dest in [('sddm',PATHS['login'][1]),('login-cursor',PATHS['login'][2])]:
     remove(Path(dest));copy(source/src,dest)
    p=Path(PATHS['login'][0]);p.parent.mkdir(parents=True,exist_ok=True)
-   p.write_text('[Theme]\nCurrent=xp-welcome\nCursorTheme=xp-windows-default\nCursorSize=32\n\n[General]\nGreeterEnvironment='+greeter_environment()+'\n\n[X11]\nEnableHiDPI=true\n\n[Wayland]\nEnableHiDPI=true\n')
+   p.write_text('[Theme]\nCurrent=xp-welcome\nCursorTheme=xp-windows-default\nCursorSize=32\n\n[General]\nInputMethod=compose\nGreeterEnvironment='+greeter_environment()+'\n\n[X11]\nEnableHiDPI=true\n\n[Wayland]\nEnableHiDPI=true\n')
    for name,dest,mode in LOGIN_STATUS:
     dest=Path(dest);remove(dest);copy(source/'login-status'/name,dest);dest.chmod(mode)
    run(['systemd-tmpfiles','--create',PATHS['login'][5]])
